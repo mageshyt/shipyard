@@ -1,0 +1,14 @@
+.git
+.gitignore
+.turbo
+node_modules
+pnpm-lock.yaml
+**/dist
+**/.next
+**/coverage
+**/*.log
+**/*.tsbuildinfo
+.DS_Store
+*.local
+.env*
+!docker-compose.yml
