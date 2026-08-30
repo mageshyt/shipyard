@@ -1,0 +1,116 @@
+enum ServiceType {
+  APPLICATION
+  CRON
+  STATIC
+  DATABASE
+}
+
+enum serviceStatus {
+  CREATED
+  BUILDING
+  DEPLOYING
+  RUNNING
+  STOPPED
+  FAILED
+}
+
+enum BuildType {
+  DOCKER
+  NATIVE
+}
+
+model service {
+  id        String        @id @default(ulid())
+  name      String
+  slug      String?       @unique
+  type      ServiceType
+  status    serviceStatus @default(CREATED)
+  buildType BuildType     @map("build_type")
+
+  rootPath          String? @map("root_path")
+  dockerfilePath    String? @map("dockerfile_path")
+  dockerContextPath String? @map("docker_context_path")
+
+  buildCommand   String? @map("build_command")
+  startCommand   String? @map("start_command")
+  advancedConfig Json?   @map("advanced_config")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projectId            String
+  project              project               @relation(fields: [projectId], references: [id])
+  domains              domain[]
+  deployments          Deployment[]
+  environmentVariables EnvironmentVariable[]
+  logs                 Log[]
+
+  @@index([projectId])
+}
+
+enum DomainStatus {
+  CREATED
+  VERIFIED
+  FAILED
+}
+
+model domain {
+  id     String       @id @default(ulid())
+  host   String       @unique
+  status DomainStatus @default(CREATED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serviceId String
+  service   service @relation(fields: [serviceId], references: [id])
+
+  @@index([serviceId])
+}
+
+model Deployment {
+  id          String        @id @default(ulid())
+  branch      String?
+  commit_hash String?
+  status      serviceStatus @default(CREATED)
+
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+  updatedAt  DateTime  @updatedAt
+
+  serviceId String
+  service   service @relation(fields: [serviceId], references: [id])
+  logs      Log[]
+
+  @@index([serviceId])
+}
+
+model EnvironmentVariable {
+  id    String @id @default(ulid())
+  key   String
+  value String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serviceId String
+  service   service @relation(fields: [serviceId], references: [id])
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+}
+
+model Log {
+  id        String   @id @default(ulid())
+  message   String
+  level     LogLevel
+  timestamp DateTime @default(now())
+
+  serviceId    String?
+  service      service?    @relation(fields: [serviceId], references: [id])
+  deploymentId String?
+  deployment   Deployment? @relation(fields: [deploymentId], references: [id])
+}

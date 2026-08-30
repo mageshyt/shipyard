@@ -1,0 +1,12 @@
+model project {
+  id          String   @id @default(ulid())
+  name        String
+  description String?
+  ownerId     String
+  slug        String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner    User      @relation(fields: [ownerId], references: [id])
+  services service[]
+}
