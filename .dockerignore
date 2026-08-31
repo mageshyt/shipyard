@@ -2,7 +2,7 @@
 .gitignore
 .turbo
 node_modules
-pnpm-lock.yaml
+# pnpm-lock.yaml intentionally NOT ignored - needed for --frozen-lockfile in Docker build
 **/dist
 **/.next
 **/coverage
