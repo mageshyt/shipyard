@@ -5,7 +5,7 @@ enum ServiceType {
   DATABASE
 }
 
-enum serviceStatus {
+enum ServiceStatus {
   CREATED
   BUILDING
   DEPLOYING
@@ -19,12 +19,12 @@ enum BuildType {
   NATIVE
 }
 
-model service {
+model Service {
   id        String        @id @default(ulid())
   name      String
   slug      String?       @unique
   type      ServiceType
-  status    serviceStatus @default(CREATED)
+  status    ServiceStatus @default(CREATED)
   buildType BuildType     @map("build_type")
 
   rootPath          String? @map("root_path")
@@ -39,8 +39,8 @@ model service {
   updatedAt DateTime @updatedAt
 
   projectId            String
-  project              project               @relation(fields: [projectId], references: [id])
-  domains              domain[]
+  project              Project               @relation(fields: [projectId], references: [id])
+  domains              Domain[]
   deployments          Deployment[]
   environmentVariables EnvironmentVariable[]
   logs                 Log[]
@@ -54,7 +54,7 @@ enum DomainStatus {
   FAILED
 }
 
-model domain {
+model Domain {
   id     String       @id @default(ulid())
   host   String       @unique
   status DomainStatus @default(CREATED)
@@ -63,7 +63,7 @@ model domain {
   updatedAt DateTime @updatedAt
 
   serviceId String
-  service   service @relation(fields: [serviceId], references: [id])
+  service   Service @relation(fields: [serviceId], references: [id])
 
   @@index([serviceId])
 }
@@ -71,18 +71,18 @@ model domain {
 model Deployment {
   id          String        @id @default(ulid())
   branch      String?
-  commit_hash String?
-  status      serviceStatus @default(CREATED)
+  commitHash  String?       @map("commit_hash")
+  status      ServiceStatus @default(CREATED)
 
   createdAt  DateTime  @default(now())
   finishedAt DateTime?
   updatedAt  DateTime  @updatedAt
 
   serviceId String
-  service   service @relation(fields: [serviceId], references: [id])
+  service   Service @relation(fields: [serviceId], references: [id])
   logs      Log[]
 
-  @@index([serviceId])
+  @@index([serviceId, createdAt])
 }
 
 model EnvironmentVariable {
@@ -94,7 +94,9 @@ model EnvironmentVariable {
   updatedAt DateTime @updatedAt
 
   serviceId String
-  service   service @relation(fields: [serviceId], references: [id])
+  service   Service @relation(fields: [serviceId], references: [id])
+
+  @@unique([serviceId, key])
 }
 
 enum LogLevel {
@@ -110,7 +112,10 @@ model Log {
   timestamp DateTime @default(now())
 
   serviceId    String?
-  service      service?    @relation(fields: [serviceId], references: [id])
+  service      Service?    @relation(fields: [serviceId], references: [id])
   deploymentId String?
   deployment   Deployment? @relation(fields: [deploymentId], references: [id])
+
+  @@index([serviceId, timestamp])
+  @@index([deploymentId, timestamp])
 }

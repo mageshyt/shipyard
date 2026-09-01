@@ -1,4 +1,4 @@
-model project {
+model Project {
   id          String   @id @default(ulid())
   name        String
   description String?
@@ -8,5 +8,7 @@ model project {
   updatedAt   DateTime @updatedAt
 
   owner    User      @relation(fields: [ownerId], references: [id])
-  services service[]
+  services Service[]
+
+  @@index([ownerId])
 }

@@ -7,6 +7,6 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projects project[]
+  projects Project[]
 
 }
