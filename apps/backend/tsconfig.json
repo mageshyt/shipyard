@@ -21,6 +21,11 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@app/core/*": ["./src/core/*"],
+      "@app/shared/*": ["./src/shared/*"],
+      "@app/modules/*": ["./src/modules/*"]
+    }
   }
 }
