@@ -1,9 +1,35 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "extensionsToTreatAsEsm": [".ts"],
+  "moduleFileExtensions": ["ts", "js", "json"],
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": {
+          "target": "ES2023",
+          "module": "esnext",
+          "moduleResolution": "bundler",
+          "esModuleInterop": true,
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "skipLibCheck": true,
+          "baseUrl": "..",
+          "paths": {
+            "@app/*": ["src/*"],
+            "src/*": ["src/*"]
+          }
+        }
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^nestjs-pino$": "<rootDir>/stubs/nestjs-pino.ts",
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+    "^@app/(.*)$": "<rootDir>/../src/$1",
+    "^src/(.*)$": "<rootDir>/../src/$1"
   }
 }
