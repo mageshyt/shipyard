@@ -30,4 +30,20 @@ export class UserService {
       },
     });
   }
+
+  create(user: {
+    name: string;
+    email: string;
+    passwordHash: string;
+  }): Promise<SafeUser> {
+    return this.db.user.create({
+      data: user,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+      },
+    });
+  }
 }
