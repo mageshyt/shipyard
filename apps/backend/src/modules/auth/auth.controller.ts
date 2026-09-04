@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Request,
   UseGuards,
@@ -31,10 +33,11 @@ export class AuthController {
     return this.authService.register(user);
   }
 
-  @UseGuards(LocalAuthGuard)
-  @Post('auth/logout')
-  async logout(@Request() req) {
-    return req.logout();
+  @UseGuards(JwtAuthGuard)
+  @Post(ROUTES.AUTH.LOGOUT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async logout() {
+    // ponytail: no-op until token revocation (jwtCacheService) lands
   }
 
   @UseGuards(JwtAuthGuard)
