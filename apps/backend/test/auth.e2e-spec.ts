@@ -1,9 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import * as argon from 'argon2';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/shared/services/prisma/prisma.service';
+import { validationPipeOptions } from '../src/core/config/app.option';
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
@@ -18,6 +19,8 @@ describe('Auth (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    // mirror main.ts: global pipe is bootstrapped there, not in AppModule
+    app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
     await app.init();
 
     prisma = app.get(PrismaService);
@@ -58,6 +61,43 @@ describe('Auth (e2e)', () => {
         .post('/auth/login')
         .send({ email: 'ghost@nowhere.dev', password })
         .expect(401);
+    });
+  });
+
+  describe('POST /auth/register', () => {
+    const regEmail = `reg-${Date.now()}@shipyard.dev`;
+    const body = { name: 'Reg User', email: regEmail, password: 'StrongP@ssw0rd1' };
+
+    afterAll(async () => {
+      await prisma.user
+        .delete({ where: { email: regEmail } })
+        .catch(() => undefined);
+    });
+
+    it('creates a user without exposing the hash', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(body)
+        .expect(201);
+
+      expect(res.body.email).toBe(regEmail);
+      expect(res.body).not.toHaveProperty('passwordHash');
+    });
+
+    it('conflicts on duplicate email', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(body)
+        .expect(409);
+
+      expect(res.body.message).toBe('User with this email already exists');
+    });
+
+    it('rejects a weak password', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ ...body, password: 'weak' })
+        .expect(400);
     });
   });
 

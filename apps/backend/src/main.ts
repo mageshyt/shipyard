@@ -15,6 +15,7 @@ import { Logger, LoggerErrorInterceptor } from 'nestjs-pino';
 import { ConfigService } from '@nestjs/config';
 import { ResponseInterceptor } from './shared/interceptors';
 import { GlobalExceptionFilter } from './shared/filters';
+import { validationPipeOptions } from '@app/core/config/app.option';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
@@ -78,16 +79,7 @@ async function bootstrap() {
   );
 
   // Validation pipe with security options
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true, // Reject unknown properties
-      transform: true, // Auto-transform payloads to DTO instances
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }),
-  );
+  app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
 
   // Configure JSON body size limit for bulk operations (10MB)
   app.useBodyParser('json', { limit: '10mb' });

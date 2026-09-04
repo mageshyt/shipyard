@@ -1,8 +1,18 @@
 import { ConfigModuleOptions } from '@nestjs/config';
+import { ValidationPipeOptions } from '@nestjs/common';
 import * as Joi from 'joi';
 
 // NOTE: cacheModuleOptions / throttlerModuleOptions will be added when
 // caching & rate-limiting are configured.
+
+export const validationPipeOptions: ValidationPipeOptions = {
+  whitelist: true,
+  forbidNonWhitelisted: true, // Reject unknown properties
+  transform: true, // Auto-transform payloads to DTO instances
+  transformOptions: {
+    enableImplicitConversion: true,
+  },
+};
 
 export const configModuleOptions: ConfigModuleOptions = {
   isGlobal: true,
