@@ -3,6 +3,7 @@ import { UserService } from '@app/modules/user/user.service';
 import * as argon from 'argon2';
 import { SafeUser } from '../user/type/safe-user';
 import { JwtService } from '@nestjs/jwt';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,18 @@ export class AuthService {
     const access_token = await this.generateJwtToken(paylaod);
 
     return { access_token };
+  }
+
+  async register(user: CreateUserDto): Promise<SafeUser> {
+    const passwordHash = await argon.hash(user.password);
+
+    const newUser = await this.userService.create({
+      name: user.name,
+      email: user.email,
+      passwordHash,
+    });
+
+    return newUser;
   }
 
   private async generateJwtToken(payload: {
