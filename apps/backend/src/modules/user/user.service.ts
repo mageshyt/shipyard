@@ -1,5 +1,6 @@
 import { PrismaService } from '@app/shared/services/prisma/prisma.service';
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { Prisma } from 'src/generated/prisma/client';
 import { SafeUser, SafeUserWithPassword } from './type/safe-user';
 
 @Injectable()
@@ -31,19 +32,30 @@ export class UserService {
     });
   }
 
-  create(user: {
+  async create(user: {
     name: string;
     email: string;
     passwordHash: string;
   }): Promise<SafeUser> {
-    return this.db.user.create({
-      data: user,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        createdAt: true,
-      },
-    });
+    try {
+      return await this.db.user.create({
+        data: user,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+        },
+      });
+    } catch (error) {
+      // unique constraint (email) violated -> 409 with a specific message
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('User with this email already exists');
+      }
+      throw error; // everything else keeps flowing to the global filter
+    }
   }
 }
