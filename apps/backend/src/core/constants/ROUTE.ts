@@ -61,4 +61,13 @@ export const ROUTES = {
     KILL: ':id/kill',
     REMOVE: ':id/remove',
   },
+
+  DOCKER_NETWORKS: {
+    TAGNAME: 'Docker Networks',
+    CONTROLLER: 'docker/networks',
+    LIST: '',
+    DETAIL: ':id',
+    CREATE: '',
+    REMOVE: ':id',
+  },
 };
