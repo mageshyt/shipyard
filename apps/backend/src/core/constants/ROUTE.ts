@@ -49,4 +49,16 @@ export const ROUTES = {
     LIST_VOLUMES: 'volumes',
     LIST_NETWORKS: 'networks',
   },
+
+  DOCKER_CONTAINERS: {
+    TAGNAME: 'Docker Containers',
+    CONTROLLER: 'docker/containers',
+    LIST: '',
+    DETAIL: ':id',
+    START: ':id/start',
+    STOP: ':id/stop',
+    RESTART: ':id/restart',
+    KILL: ':id/kill',
+    REMOVE: ':id/remove',
+  },
 };
