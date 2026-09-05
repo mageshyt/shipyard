@@ -3,12 +3,13 @@ model Project {
   name        String
   description String?
   ownerId     String
-  slug        String?  @unique
+  slug        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner    User      @relation(fields: [ownerId], references: [id])
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   services Service[]
 
+  @@unique([ownerId, slug])
   @@index([ownerId])
 }
