@@ -27,5 +27,6 @@
       "@app/shared/*": ["./src/shared/*"],
       "@app/modules/*": ["./src/modules/*"]
     }
-  }
+  },
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
 }
