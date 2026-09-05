@@ -40,4 +40,13 @@ export const ROUTES = {
     READY: 'ready',
     LIVE: 'live',
   },
+
+  DOCKER: {
+    TAGNAME: 'Docker',
+    CONTROLLER: 'docker',
+    HEALTH: 'health',
+    LIST_IMAGES: 'images',
+    LIST_VOLUMES: 'volumes',
+    LIST_NETWORKS: 'networks',
+  },
 };
