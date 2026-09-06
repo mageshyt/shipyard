@@ -19,7 +19,7 @@ import { LoginDto } from './dto/login.dto';
 @Controller(ROUTES.AUTH.CONTROLLER)
 @ApiTags(ROUTES.AUTH.TAGNAME)
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService) {}
   @UseGuards(LocalAuthGuard)
   @Post(ROUTES.AUTH.LOGIN)
   @ApiBody({ type: LoginDto })

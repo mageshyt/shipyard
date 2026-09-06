@@ -6,9 +6,7 @@ import {
 } from 'class-validator';
 
 @ValidatorConstraint({ async: false })
-export class IsLocalOrPublicUrlConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsLocalOrPublicUrlConstraint implements ValidatorConstraintInterface {
   validate(url: any): boolean {
     const regex =
       /^https?:\/\/(localhost|127\.0\.0\.1|\d{1,3}(?:\.\d{1,3}){3}|[\w.-]+\.[a-z]{2,})/i;
@@ -72,9 +70,7 @@ const commonPasswords = [
 ];
 
 @ValidatorConstraint({ async: false })
-export class IsNotCommonPasswordConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsNotCommonPasswordConstraint implements ValidatorConstraintInterface {
   validate(password: string) {
     return !commonPasswords.includes(password.toLowerCase());
   }

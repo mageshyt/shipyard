@@ -7,7 +7,7 @@ import { CreateNetworkDto } from './dto/create-network.dto';
 @Injectable()
 export class NetworksService {
   private readonly logger = new Logger(NetworksService.name);
-  constructor(private readonly dockerService: DockerService) { }
+  constructor(private readonly dockerService: DockerService) {}
 
   async listNetworks(): Promise<Docker.NetworkInspectInfo[] | undefined> {
     try {

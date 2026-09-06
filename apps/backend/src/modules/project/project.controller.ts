@@ -21,7 +21,7 @@ import { GetUser } from '@app/shared/decorators';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) { }
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post(ROUTES.PROJECT.CREATE)
   create(

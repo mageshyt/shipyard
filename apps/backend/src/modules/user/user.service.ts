@@ -5,7 +5,7 @@ import { SafeUser, SafeUserWithPassword } from './type/safe-user';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   findOne(userId: string): Promise<SafeUser | null> {
     return this.db.user.findUnique({

@@ -16,4 +16,4 @@ import { NetworksModule } from './docker/networks/networks.module';
     NetworksModule,
   ],
 })
-export class Modules { }
+export class Modules {}

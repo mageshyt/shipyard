@@ -20,4 +20,4 @@ import { ServicesModule } from '@app/shared/services/services.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

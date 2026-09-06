@@ -9,7 +9,7 @@ import { toDto } from '@app/shared/util';
 export class ContainerService {
   private readonly logger = new Logger(ContainerService.name);
 
-  constructor(private readonly dockerService: DockerService) { }
+  constructor(private readonly dockerService: DockerService) {}
 
   async listContainers(
     filters: ListContainerFilterParamsDto,

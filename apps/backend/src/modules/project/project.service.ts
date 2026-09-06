@@ -12,7 +12,7 @@ import { Project } from './entities/project.entity';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async create(createProjectDto: CreateProjectDto, ownerId: string) {
     try {

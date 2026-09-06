@@ -15,7 +15,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<
   T,
   StandardResponse<T> | T
 > {
-  constructor(private reflector: Reflector = new Reflector()) { }
+  constructor(private reflector: Reflector = new Reflector()) {}
 
   intercept(
     context: ExecutionContext,
