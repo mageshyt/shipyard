@@ -1,49 +1,46 @@
 import * as crypto from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { DockerService } from '../docker.service';
-import Docker from 'dockerode';
 import { CreateNetworkDto } from './dto/create-network.dto';
+import { NetworkResponseDto } from './dto/network-response.dto';
+import { toDto } from '@app/shared/util';
 
 @Injectable()
 export class NetworksService {
   private readonly logger = new Logger(NetworksService.name);
   constructor(private readonly dockerService: DockerService) {}
 
-  async listNetworks(): Promise<Docker.NetworkInspectInfo[] | undefined> {
+  async listNetworks(): Promise<NetworkResponseDto[]> {
     try {
       const networks = await this.dockerService.client.listNetworks();
-      return networks;
+      return toDto(NetworkResponseDto, networks);
     } catch (error) {
       this.logger.error('Error listing networks:', error);
       throw error;
     }
   }
 
-  async createNetwork(
-    dto: CreateNetworkDto,
-  ): Promise<Docker.Network | undefined> {
+  async createNetwork(dto: CreateNetworkDto): Promise<NetworkResponseDto> {
     try {
       const network = await this.dockerService.client.createNetwork({
         Name: this.generateRandomName(8, dto.name),
         Driver: 'bridge',
       });
 
-      return network;
+      return toDto(NetworkResponseDto, await network.inspect());
     } catch (error) {
       this.logger.error('Error creating network:', error);
       throw error;
     }
   }
 
-  async getNetworkById(
-    networkId: string,
-  ): Promise<Docker.NetworkInspectInfo | null> {
+  async getNetworkById(networkId: string): Promise<NetworkResponseDto> {
     try {
       const network = await this.dockerService.client
         .getNetwork(networkId)
         .inspect();
 
-      return network;
+      return toDto(NetworkResponseDto, network);
     } catch (error) {
       this.logger.error('Error getting network by ID:', error);
       throw error;
