@@ -78,4 +78,13 @@ export const ROUTES = {
     PULL: 'pull',
     REMOVE: ':id',
   },
+
+  DOCKER_VOLUME: {
+    TAGNAME: 'Docker Volumes',
+    CONTROLLER: 'docker/volumes',
+    LIST: '',
+    CREATE: '',
+    DETAIL: ':name',
+    REMOVE: ':name',
+  },
 };
