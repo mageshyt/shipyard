@@ -47,14 +47,4 @@ export class DockerService implements OnModuleInit {
       throw error;
     }
   }
-
-  async listImages(): Promise<Docker.ImageInfo[]> {
-    try {
-      const images = await this.docker.listImages();
-      return images;
-    } catch (error) {
-      this.logger.error('Error listing images:', error);
-      throw error;
-    }
-  }
 }

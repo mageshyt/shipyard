@@ -17,10 +17,4 @@ export class DockerController {
   async pingDocker(): Promise<DockerHealth> {
     return this.dockerService.pingDocker();
   }
-
-  @Get(ROUTES.DOCKER.LIST_IMAGES)
-  @ApiOperation({ summary: 'List all Docker images' })
-  async listImages() {
-    return this.dockerService.listImages();
-  }
 }

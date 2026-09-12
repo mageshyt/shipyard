@@ -70,4 +70,12 @@ export const ROUTES = {
     CREATE: '',
     REMOVE: ':id',
   },
+
+  DOCKER_IMAGE: {
+    TAGNAME: 'Docker Images',
+    CONTROLLER: 'docker/images',
+    LIST: '',
+    PULL: 'pull',
+    REMOVE: ':id',
+  },
 };

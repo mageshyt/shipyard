@@ -5,6 +5,7 @@ import { ProjectModule } from './project/project.module';
 import { DockerModule } from './docker/docker.module';
 import { ContainerModule } from './docker/container/container.module';
 import { NetworksModule } from './docker/networks/networks.module';
+import { ImagesModule } from './docker/images/images.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { NetworksModule } from './docker/networks/networks.module';
     DockerModule,
     ContainerModule,
     NetworksModule,
+    ImagesModule,
   ],
 })
 export class Modules {}
