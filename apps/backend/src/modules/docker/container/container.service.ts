@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Docker from 'dockerode';
 import { DockerService } from '../docker.service';
-import { DockerContainerDto } from './dto/docker-container.dto';
+import {
+  ContainerActionDto,
+  ContainerKillSignal,
+  DockerContainerDto,
+} from './dto/docker-container.dto';
+import { ContainerDetailDto } from './dto/container-detail.dto';
 import { ListContainerFilterParamsDto } from './dto/listcontainer-filter.dto';
 import { toDto } from '@app/shared/util';
 
@@ -51,68 +56,63 @@ export class ContainerService {
 
   async findContainerById(
     containerId: string,
-  ): Promise<DockerContainerDto | null> {
+  ): Promise<ContainerDetailDto | null> {
     try {
       const containerInfo = await this.dockerService
         .getContainer(containerId)
         .inspect();
 
-      return toDto(DockerContainerDto, containerInfo);
+      return toDto(ContainerDetailDto, containerInfo);
     } catch (error) {
       this.logger.error(`Error finding container by ID ${containerId}:`, error);
       return null;
     }
   }
 
-  async startContainer(containerId: string) {
+  async startContainer(containerId: string): Promise<ContainerActionDto> {
     try {
       await this.dockerService.getContainer(containerId).start();
 
-      return {
-        id: containerId,
-        status: 'started',
-      };
+      return { id: containerId, status: 'started' };
     } catch (error) {
       this.logger.error(`Error starting container ${containerId}:`, error);
+      throw error;
     }
   }
 
-  async stopContainer(containerId: string) {
+  async stopContainer(containerId: string): Promise<ContainerActionDto> {
     try {
       await this.dockerService.getContainer(containerId).stop({ t: 10 });
 
-      return {
-        id: containerId,
-        status: 'stopped',
-      };
+      return { id: containerId, status: 'stopped' };
     } catch (error) {
       this.logger.error(`Error stop container ${containerId}:`, error);
+      throw error;
     }
   }
 
-  async restartContainer(containerId: string) {
+  async restartContainer(containerId: string): Promise<ContainerActionDto> {
     try {
       await this.dockerService.getContainer(containerId).restart();
 
-      return {
-        id: containerId,
-        status: 'running',
-      };
+      return { id: containerId, status: 'running' };
     } catch (error) {
       this.logger.error(`Error restarting container ${containerId}:`, error);
+      throw error;
     }
   }
 
-  async killContainer(containerId: string, signal: string = 'SIGTERM') {
+  async killContainer(
+    containerId: string,
+    signal: ContainerKillSignal = ContainerKillSignal.SIGTERM,
+  ): Promise<ContainerActionDto> {
     try {
       await this.dockerService.getContainer(containerId).kill({ signal });
 
-      return {
-        id: containerId,
-        status: 'killed',
-      };
+      return { id: containerId, status: 'killed' };
     } catch (error) {
       this.logger.error(`Error killing container ${containerId}:`, error);
+      throw error;
     }
   }
 
@@ -120,18 +120,16 @@ export class ContainerService {
     containerId: string,
     force: boolean = false,
     removeVolumes: boolean = false,
-  ) {
+  ): Promise<ContainerActionDto> {
     try {
       await this.dockerService
         .getContainer(containerId)
         .remove({ force, v: removeVolumes });
 
-      return {
-        id: containerId,
-        status: 'removed',
-      };
+      return { id: containerId, status: 'removed' };
     } catch (error) {
       this.logger.error(`Error removing container ${containerId}:`, error);
+      throw error;
     }
   }
 

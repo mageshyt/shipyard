@@ -1,6 +1,42 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Expose, Type } from 'class-transformer';
 import { IsEnum, IsOptional } from 'class-validator';
+
+export class ContainerPortDto {
+  @ApiProperty({ example: '0.0.0.0' })
+  @Expose()
+  IP!: string;
+
+  @ApiProperty({ example: 3000 })
+  @Expose()
+  PrivatePort!: number;
+
+  @ApiPropertyOptional({ example: 30000 })
+  @Expose()
+  PublicPort?: number;
+
+  @ApiProperty({ example: 'tcp' })
+  @Expose()
+  Type!: string;
+}
+
+export class ContainerNetworkInfoDto {
+  @ApiProperty()
+  @Expose()
+  NetworkID!: string;
+
+  @ApiProperty({ example: '172.20.0.1' })
+  @Expose()
+  Gateway!: string;
+
+  @ApiProperty({ example: '172.20.0.2' })
+  @Expose()
+  IPAddress!: string;
+
+  @ApiProperty({ example: '02:42:ac:14:00:02' })
+  @Expose()
+  MacAddress!: string;
+}
 
 export class DockerContainerDto {
   @ApiProperty()
@@ -34,6 +70,35 @@ export class DockerContainerDto {
   @ApiProperty()
   @Expose()
   Status!: string;
+
+  @ApiProperty({ type: [ContainerPortDto] })
+  @Expose()
+  @Type(() => ContainerPortDto)
+  Ports!: ContainerPortDto[];
+
+  @ApiProperty({ type: Object, example: {} })
+  @Expose()
+  Labels!: Record<string, string>;
+
+  @ApiProperty({
+    type: ContainerNetworkInfoDto,
+    isArray: true,
+    description:
+      'Networks the container is attached to, keyed by network name. Swagger cannot express the map shape; actual response is an object keyed by network name.',
+  })
+  @Expose()
+  @Type(() => ContainerNetworkInfoDto)
+  NetworkSettings!: { Networks: Record<string, ContainerNetworkInfoDto> };
+}
+
+export class ContainerActionDto {
+  @ApiProperty({ description: 'Container ID' })
+  @Expose()
+  id!: string;
+
+  @ApiProperty({ example: 'started' })
+  @Expose()
+  status!: string;
 }
 
 export enum ContainerKillSignal {

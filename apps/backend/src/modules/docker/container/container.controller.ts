@@ -20,9 +20,11 @@ import {
 import { JwtAuthGuard } from '@app/shared/auth';
 import { ListContainerFilterParamsDto } from './dto/listcontainer-filter.dto';
 import {
+  ContainerActionDto,
   DockerContainerDto,
   KillContainerDto,
 } from './dto/docker-container.dto';
+import { ContainerDetailDto } from './dto/container-detail.dto';
 
 @Controller(ROUTES.DOCKER_CONTAINERS.CONTROLLER)
 @ApiTags(ROUTES.DOCKER_CONTAINERS.TAGNAME)
@@ -41,6 +43,7 @@ export class ContainerController {
   @Get(ROUTES.DOCKER_CONTAINERS.DETAIL)
   @ApiOperation({ summary: 'Get a container by ID' })
   @ApiParam({ name: 'id', description: 'Container ID or name' })
+  @ApiOkResponse({ type: ContainerDetailDto })
   async getContainer(@Param('id') id: string) {
     return this.containerService.findContainerById(id);
   }
@@ -48,6 +51,7 @@ export class ContainerController {
   @Post(ROUTES.DOCKER_CONTAINERS.START)
   @ApiOperation({ summary: 'Start a container' })
   @ApiParam({ name: 'id', description: 'Container ID or name' })
+  @ApiOkResponse({ type: ContainerActionDto })
   async startContainer(@Param('id') id: string) {
     return this.containerService.startContainer(id);
   }
@@ -55,6 +59,7 @@ export class ContainerController {
   @Post(ROUTES.DOCKER_CONTAINERS.STOP)
   @ApiOperation({ summary: 'Stop a container' })
   @ApiParam({ name: 'id', description: 'Container ID or name' })
+  @ApiOkResponse({ type: ContainerActionDto })
   async stopContainer(@Param('id') id: string) {
     return this.containerService.stopContainer(id);
   }
@@ -62,6 +67,7 @@ export class ContainerController {
   @Post(ROUTES.DOCKER_CONTAINERS.RESTART)
   @ApiOperation({ summary: 'Restart a container' })
   @ApiParam({ name: 'id', description: 'Container ID or name' })
+  @ApiOkResponse({ type: ContainerActionDto })
   async restartContainer(@Param('id') id: string) {
     return this.containerService.restartContainer(id);
   }
@@ -69,6 +75,7 @@ export class ContainerController {
   @Post(ROUTES.DOCKER_CONTAINERS.KILL)
   @ApiOperation({ summary: 'Kill a container with an optional signal' })
   @ApiParam({ name: 'id', description: 'Container ID or name' })
+  @ApiOkResponse({ type: ContainerActionDto })
   async killContainer(@Param('id') id: string, @Body() dto: KillContainerDto) {
     return this.containerService.killContainer(id, dto.signal);
   }
@@ -76,6 +83,7 @@ export class ContainerController {
   @Post(ROUTES.DOCKER_CONTAINERS.REMOVE)
   @ApiOperation({ summary: 'Remove a container' })
   @ApiParam({ name: 'id', description: 'Container ID or name' })
+  @ApiOkResponse({ type: ContainerActionDto })
   @ApiQuery({
     name: 'force',
     required: false,
