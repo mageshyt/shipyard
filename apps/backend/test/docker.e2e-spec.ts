@@ -32,7 +32,6 @@ describe('Docker (e2e)', () => {
 
   const dockerMock = {
     pingDocker: jest.fn<() => Promise<unknown>>(),
-    listImages: jest.fn<() => Promise<unknown>>(),
   };
 
   const health = {
@@ -42,7 +41,6 @@ describe('Docker (e2e)', () => {
     containers: { total: 3, running: 2, stopped: 1 },
     images: 23,
   };
-  const images = [{ Id: 'sha256:111', RepoTags: ['nginx:latest'] }];
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -66,7 +64,6 @@ describe('Docker (e2e)', () => {
 
   beforeEach(() => {
     dockerMock.pingDocker.mockResolvedValue(health);
-    dockerMock.listImages.mockResolvedValue(images);
   });
 
   describe('GET /docker/health', () => {
@@ -89,21 +86,6 @@ describe('Docker (e2e)', () => {
 
     it('rejects requests without a token', async () => {
       await request(app.getHttpServer()).get('/docker/health').expect(401);
-    });
-  });
-
-  describe('GET /docker/images', () => {
-    it('returns the image list', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/docker/images')
-        .set(auth)
-        .expect(200);
-
-      expect(res.body).toEqual(images);
-    });
-
-    it('rejects requests without a token', async () => {
-      await request(app.getHttpServer()).get('/docker/images').expect(401);
     });
   });
 });

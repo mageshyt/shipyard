@@ -140,6 +140,8 @@ describe('Containers (e2e)', () => {
         Created: 1700000000,
         State: 'running',
         Status: 'Up 2 hours',
+        Ports: [{ PrivatePort: 80 }],
+        Labels: { 'shipyard.serviceId': 'svc-1' },
       });
       expect(fns.listContainers).toHaveBeenCalledWith({
         all: true,
@@ -165,7 +167,7 @@ describe('Containers (e2e)', () => {
         .expect(200);
 
       expect(res.body.Id).toBe(id);
-      expect(res.body).not.toHaveProperty('Mounts');
+      expect(res.body.Mounts).toEqual([]);
     });
 
     it('returns an empty body for an unknown container', async () => {

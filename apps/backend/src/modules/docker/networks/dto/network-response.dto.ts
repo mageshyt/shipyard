@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
+import { Expose, plainToInstance, Transform, Type } from 'class-transformer';
 import type {
   NetworkContainer,
   NetworkIpam,
@@ -95,6 +95,17 @@ export class NetworkResponseDto implements NetworkResponse {
       'Attached containers, keyed by container ID (inspect only). Swagger cannot express the map shape; actual response is an object keyed by container ID.',
   })
   @Expose()
-  @Type(() => NetworkContainerDto)
+  @Transform(({ value }: { value: Record<string, unknown> | undefined }) =>
+    value
+      ? Object.fromEntries(
+          Object.entries(value).map(([key, entry]) => [
+            key,
+            plainToInstance(NetworkContainerDto, entry, {
+              excludeExtraneousValues: true,
+            }),
+          ]),
+        )
+      : value,
+  )
   Containers?: Record<string, NetworkContainerDto>;
 }
