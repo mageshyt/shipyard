@@ -1,7 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
+import type {
+  NetworkContainer,
+  NetworkIpam,
+  NetworkIpamConfig,
+  NetworkResponse,
+} from '@workspace/types';
 
-export class NetworkIpamConfigDto {
+export class NetworkIpamConfigDto implements NetworkIpamConfig {
   @ApiProperty({ example: '172.20.0.0/16' })
   @Expose()
   Subnet!: string;
@@ -11,7 +17,7 @@ export class NetworkIpamConfigDto {
   Gateway!: string;
 }
 
-export class NetworkIpamDto {
+export class NetworkIpamDto implements NetworkIpam {
   @ApiProperty({ example: 'default' })
   @Expose()
   Driver!: string;
@@ -22,12 +28,13 @@ export class NetworkIpamDto {
   Config!: NetworkIpamConfigDto[];
 }
 
-export class NetworkContainerDto {
+export class NetworkContainerDto implements NetworkContainer {
   @ApiProperty({ example: 'my-container' })
   @Expose()
   Name!: string;
 
-  @ApiProperty({ description: 'Container ID (the object key)' })
+  @ApiProperty({ description: 'Endpoint ID of the container on this network' })
+  @Expose()
   EndpointID!: string;
 
   @ApiProperty({ example: '172.20.0.2/16' })
@@ -39,7 +46,7 @@ export class NetworkContainerDto {
   IPv6Address!: string;
 }
 
-export class NetworkResponseDto {
+export class NetworkResponseDto implements NetworkResponse {
   @ApiProperty()
   @Expose()
   Id!: string;

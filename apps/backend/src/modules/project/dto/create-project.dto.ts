@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import type { CreateProject } from '@workspace/types';
 
-export class CreateProjectDto {
+export class CreateProjectDto implements CreateProject {
   @ApiProperty({
     description: 'The name of the project',
     example: 'My Project',

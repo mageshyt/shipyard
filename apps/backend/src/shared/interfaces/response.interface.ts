@@ -1,9 +1,4 @@
-export interface StandardResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-}
+export type { StandardResponse } from '@workspace/types';
 
 export interface UserExecutionContext {
   user?: {

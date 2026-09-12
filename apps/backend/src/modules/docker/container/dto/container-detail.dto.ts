@@ -1,8 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
+import type {
+  ContainerConfig,
+  ContainerDetail,
+  ContainerHealth,
+  ContainerHostConfig,
+  ContainerMount,
+  ContainerNetworkSettings,
+  ContainerState,
+  PortBinding,
+} from '@workspace/types';
 import { ContainerNetworkInfoDto } from './docker-container.dto';
 
-export class ContainerHealthDto {
+export class ContainerHealthDto implements ContainerHealth {
   @ApiProperty({ example: 'healthy' })
   @Expose()
   Status!: string;
@@ -12,7 +22,7 @@ export class ContainerHealthDto {
   FailingStreak!: number;
 }
 
-export class ContainerStateDto {
+export class ContainerStateDto implements ContainerState {
   @ApiProperty({ example: 'running' })
   @Expose()
   Status!: string;
@@ -59,7 +69,7 @@ export class ContainerStateDto {
   Health?: ContainerHealthDto;
 }
 
-export class ContainerConfigDto {
+export class ContainerConfigDto implements ContainerConfig {
   @ApiProperty()
   @Expose()
   Image!: string;
@@ -77,7 +87,7 @@ export class ContainerConfigDto {
   Labels!: Record<string, string>;
 }
 
-export class PortBindingDto {
+export class PortBindingDto implements PortBinding {
   @ApiProperty({ example: '0.0.0.0' })
   @Expose()
   HostIp!: string;
@@ -87,7 +97,7 @@ export class PortBindingDto {
   HostPort!: string;
 }
 
-export class ContainerHostConfigDto {
+export class ContainerHostConfigDto implements ContainerHostConfig {
   @ApiProperty({
     type: PortBindingDto,
     isArray: true,
@@ -111,7 +121,7 @@ export class ContainerHostConfigDto {
   RestartPolicy?: { Name: string; MaximumRetryCount: number };
 }
 
-export class ContainerNetworkSettingsDto {
+export class ContainerNetworkSettingsDto implements ContainerNetworkSettings {
   @ApiProperty({
     type: ContainerNetworkInfoDto,
     isArray: true,
@@ -133,7 +143,7 @@ export class ContainerNetworkSettingsDto {
   Ports!: Record<string, PortBindingDto[]>;
 }
 
-export class ContainerMountDto {
+export class ContainerMountDto implements ContainerMount {
   @ApiProperty({ example: 'bind' })
   @Expose()
   Type!: string;
@@ -159,7 +169,7 @@ export class ContainerMountDto {
   RW!: boolean;
 }
 
-export class ContainerDetailDto {
+export class ContainerDetailDto implements ContainerDetail {
   @ApiProperty()
   @Expose()
   Id!: string;

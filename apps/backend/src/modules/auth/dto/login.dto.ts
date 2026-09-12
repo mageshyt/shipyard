@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString } from 'class-validator';
+import type { Login } from '@workspace/types';
 
-export class LoginDto {
+export class LoginDto implements Login {
   @ApiProperty({
     description: 'The email address of the user',
     example: 'magesh@gmail.com',

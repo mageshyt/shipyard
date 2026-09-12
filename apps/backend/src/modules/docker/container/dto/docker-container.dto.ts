@@ -1,8 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { IsEnum, IsOptional } from 'class-validator';
+import type {
+  ContainerAction,
+  ContainerKillSignal,
+  ContainerNetworkInfo,
+  ContainerPort,
+  DockerContainer,
+  KillContainer,
+} from '@workspace/types';
 
-export class ContainerPortDto {
+export class ContainerPortDto implements ContainerPort {
   @ApiProperty({ example: '0.0.0.0' })
   @Expose()
   IP!: string;
@@ -20,7 +28,7 @@ export class ContainerPortDto {
   Type!: string;
 }
 
-export class ContainerNetworkInfoDto {
+export class ContainerNetworkInfoDto implements ContainerNetworkInfo {
   @ApiProperty()
   @Expose()
   NetworkID!: string;
@@ -38,7 +46,7 @@ export class ContainerNetworkInfoDto {
   MacAddress!: string;
 }
 
-export class DockerContainerDto {
+export class DockerContainerDto implements DockerContainer {
   @ApiProperty()
   @Expose()
   Id!: string;
@@ -91,7 +99,7 @@ export class DockerContainerDto {
   NetworkSettings!: { Networks: Record<string, ContainerNetworkInfoDto> };
 }
 
-export class ContainerActionDto {
+export class ContainerActionDto implements ContainerAction {
   @ApiProperty({ description: 'Container ID' })
   @Expose()
   id!: string;
@@ -101,19 +109,19 @@ export class ContainerActionDto {
   status!: string;
 }
 
-export enum ContainerKillSignal {
-  SIGTERM = 'SIGTERM',
-  SIGKILL = 'SIGKILL',
-}
+export const CONTAINER_KILL_SIGNALS = {
+  SIGTERM: 'SIGTERM',
+  SIGKILL: 'SIGKILL',
+} as const;
 
-export class KillContainerDto {
+export class KillContainerDto implements KillContainer {
   @ApiProperty({
-    enum: ContainerKillSignal,
+    enum: Object.values(CONTAINER_KILL_SIGNALS),
     description: 'Signal to send to the container',
-    default: ContainerKillSignal.SIGTERM,
+    default: CONTAINER_KILL_SIGNALS.SIGTERM,
   })
   @Expose()
   @IsOptional()
-  @IsEnum(ContainerKillSignal)
-  signal: ContainerKillSignal = ContainerKillSignal.SIGTERM;
+  @IsEnum(CONTAINER_KILL_SIGNALS)
+  signal: ContainerKillSignal = CONTAINER_KILL_SIGNALS.SIGTERM;
 }

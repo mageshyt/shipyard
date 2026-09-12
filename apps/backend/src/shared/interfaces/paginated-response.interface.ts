@@ -1,16 +1,6 @@
-export interface PaginationMeta {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNext: boolean;
-}
+import type { PaginatedResponse, PaginationMeta } from '@workspace/types';
 
-export type PaginatedResponse<T, K extends string> = {
-  [P in K]: T[];
-} & {
-  meta: PaginationMeta;
-};
+export type { PaginatedResponse, PaginationMeta } from '@workspace/types';
 
 export function createPaginatedResponse<T, K extends string>(
   key: K,

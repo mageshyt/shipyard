@@ -5,6 +5,7 @@ import { PassportStrategy } from '@nestjs/passport';
 
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { SafeUser } from '@app/modules/user/type/safe-user';
+import type { JwtPayload } from '@workspace/types';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -23,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: { sub: string; username: string }) {
+  async validate(payload: JwtPayload) {
     // Try to get user from cache first
 
     // const cachedUser = await this.jwtCacheService.getUser(

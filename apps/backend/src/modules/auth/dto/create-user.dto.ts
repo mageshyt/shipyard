@@ -6,8 +6,9 @@ import {
   IsStrongPassword,
   Length,
 } from 'class-validator';
+import type { CreateUser } from '@workspace/types';
 
-export class CreateUserDto {
+export class CreateUserDto implements CreateUser {
   @ApiProperty({
     description: 'The name of the user',
     example: 'magesh',

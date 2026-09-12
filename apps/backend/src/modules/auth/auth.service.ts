@@ -4,6 +4,7 @@ import * as argon from 'argon2';
 import { SafeUser } from '../user/type/safe-user';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from './dto/create-user.dto';
+import type { JwtPayload, LoginResponse } from '@workspace/types';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +24,7 @@ export class AuthService {
     return null;
   }
 
-  async login(user: SafeUser): Promise<{ access_token: string }> {
+  async login(user: SafeUser): Promise<LoginResponse> {
     const paylaod = { username: user.email, sub: user.id };
 
     const access_token = await this.generateJwtToken(paylaod);
@@ -43,10 +44,7 @@ export class AuthService {
     return newUser;
   }
 
-  private async generateJwtToken(payload: {
-    username: string;
-    sub: string;
-  }): Promise<string> {
+  private async generateJwtToken(payload: JwtPayload): Promise<string> {
     return this.jwtService.sign(payload);
   }
 }

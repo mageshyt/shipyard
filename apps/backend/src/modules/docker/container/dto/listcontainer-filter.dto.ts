@@ -1,7 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsIn } from 'class-validator';
+import type { ListContainerFilterParams } from '@workspace/types';
 
-export class ListContainerFilterParamsDto {
+export class ListContainerFilterParamsDto implements ListContainerFilterParams {
   @ApiPropertyOptional({
     description: 'All containers if true, otherwise only running containers',
     example: false,

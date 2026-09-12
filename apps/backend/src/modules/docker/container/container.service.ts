@@ -3,12 +3,12 @@ import Docker from 'dockerode';
 import { DockerService } from '../docker.service';
 import {
   ContainerActionDto,
-  ContainerKillSignal,
   DockerContainerDto,
 } from './dto/docker-container.dto';
 import { ContainerDetailDto } from './dto/container-detail.dto';
 import { ListContainerFilterParamsDto } from './dto/listcontainer-filter.dto';
 import { toDto } from '@app/shared/util';
+import type { ContainerKillSignal } from '@workspace/types';
 
 @Injectable()
 export class ContainerService {
@@ -104,7 +104,7 @@ export class ContainerService {
 
   async killContainer(
     containerId: string,
-    signal: ContainerKillSignal = ContainerKillSignal.SIGTERM,
+    signal: ContainerKillSignal = 'SIGTERM',
   ): Promise<ContainerActionDto> {
     try {
       await this.dockerService.getContainer(containerId).kill({ signal });
