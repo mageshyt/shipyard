@@ -130,3 +130,7 @@ export interface CreateContainer {
   network?: string;
   cmd?: string[];
 }
+
+export interface ContainerTimeout {
+  t?: number;
+}

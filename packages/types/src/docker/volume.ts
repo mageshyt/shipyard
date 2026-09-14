@@ -16,6 +16,7 @@ export interface DockerVolume {
 
 export interface CreateVolume {
   name: string;
+  serviceId?: string;
 }
 
 export interface DeleteVolume {

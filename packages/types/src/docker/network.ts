@@ -31,6 +31,7 @@ export interface NetworkResponse {
 
 export interface CreateNetwork {
   name: string;
+  projectId?: string;
 }
 
 export interface NetworkConnectionResponse {

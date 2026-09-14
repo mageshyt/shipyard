@@ -26,3 +26,8 @@ export interface PullImageResponse {
   tag: string;
   message: string;
 }
+
+export interface RemoveImageResponse {
+  id: string;
+  removed: boolean;
+}
