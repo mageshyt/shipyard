@@ -54,6 +54,7 @@ export const ROUTES = {
     TAGNAME: 'Docker Containers',
     CONTROLLER: 'docker/containers',
     LIST: '',
+    CREATE: '',
     DETAIL: ':id',
     START: ':id/start',
     STOP: ':id/stop',
@@ -69,6 +70,8 @@ export const ROUTES = {
     DETAIL: ':id',
     CREATE: '',
     REMOVE: ':id',
+    CONNECT: ':id/connect/:containerId',
+    DISCONNECT: ':id/disconnect/:containerId',
   },
 
   DOCKER_IMAGE: {

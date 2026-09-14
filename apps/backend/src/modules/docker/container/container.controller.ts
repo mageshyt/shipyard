@@ -25,6 +25,7 @@ import {
   KillContainerDto,
 } from './dto/docker-container.dto';
 import { ContainerDetailDto } from './dto/container-detail.dto';
+import { CreateContainerDto } from './dto/create-container.dto';
 
 @Controller(ROUTES.DOCKER_CONTAINERS.CONTROLLER)
 @ApiTags(ROUTES.DOCKER_CONTAINERS.TAGNAME)
@@ -38,6 +39,13 @@ export class ContainerController {
   @ApiOkResponse({ type: [DockerContainerDto] })
   async listContainers(@Query() filters: ListContainerFilterParamsDto) {
     return this.containerService.listContainers(filters);
+  }
+
+  @Post(ROUTES.DOCKER_CONTAINERS.CREATE)
+  @ApiOperation({ summary: 'Create a new container' })
+  @ApiOkResponse({ type: ContainerDetailDto })
+  async createContainer(@Body() dto: CreateContainerDto) {
+    return this.containerService.createContainer(dto);
   }
 
   @Get(ROUTES.DOCKER_CONTAINERS.DETAIL)
