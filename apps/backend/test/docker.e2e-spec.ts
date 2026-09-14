@@ -11,6 +11,7 @@ import request from 'supertest';
 import { DockerModule } from '../src/modules/docker/docker.module';
 import { DockerService } from '../src/modules/docker/docker.service';
 import { JwtAuthGuard } from '../src/shared/auth';
+import { GlobalExceptionFilter } from '../src/shared/filters';
 import { validationPipeOptions } from '../src/core/config/app.option';
 
 // Stands in for JwtAuthGuard: 401s without a Bearer token, allows with one.
@@ -53,8 +54,9 @@ describe('Docker (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    // mirror main.ts: global pipe is bootstrapped there, not in the module
+    // mirror main.ts: global pipe + filter are bootstrapped there, not in the module
     app.useGlobalPipes(new ValidationPipe(validationPipeOptions));
+    app.useGlobalFilters(new GlobalExceptionFilter());
     await app.init();
   });
 
@@ -76,12 +78,23 @@ describe('Docker (e2e)', () => {
       expect(res.body).toEqual(health);
     });
 
-    it('surfaces a 500 when the daemon is unreachable', async () => {
-      dockerMock.pingDocker.mockRejectedValueOnce(new Error('connect ENOENT'));
-      await request(app.getHttpServer())
+    it('surfaces a 502 when the daemon is unreachable', async () => {
+      dockerMock.pingDocker.mockRejectedValueOnce(
+        Object.assign(new Error('connect ENOENT /var/run/docker.sock'), {
+          code: 'ENOENT',
+        }),
+      );
+
+      const res = await request(app.getHttpServer())
         .get('/docker/health')
         .set(auth)
-        .expect(500);
+        .expect(502);
+
+      expect(res.body).toEqual({
+        success: false,
+        error: 'Docker Unavailable',
+        message: 'Docker unavailable',
+      });
     });
 
     it('rejects requests without a token', async () => {
