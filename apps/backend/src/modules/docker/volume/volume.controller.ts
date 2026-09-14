@@ -40,7 +40,7 @@ export class VolumeController {
   @ApiOperation({ summary: 'Create a Docker volume' })
   @ApiOkResponse({ type: DockerVolumeDto })
   createVolume(@Body() dto: CreateVolumeDto) {
-    return this.volumeService.create(dto.name);
+    return this.volumeService.create(dto);
   }
 
   @Get(ROUTES.DOCKER_VOLUME.DETAIL)

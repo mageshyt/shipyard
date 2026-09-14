@@ -4,7 +4,7 @@ import { DockerService } from '../docker.service';
 import { CreateNetworkDto } from './dto/create-network.dto';
 import { NetworkResponseDto } from './dto/network-response.dto';
 import { NetworkConnectionResponseDto } from './dto/network-connection.dto';
-import { toDto } from '@app/shared/util';
+import { toDto, shipyardLabel } from '@app/shared/util';
 
 @Injectable()
 export class NetworksService {
@@ -23,9 +23,13 @@ export class NetworksService {
 
   async createNetwork(dto: CreateNetworkDto): Promise<NetworkResponseDto> {
     try {
+      const labels: Record<string, string> = {};
+      if (dto.projectId) labels[shipyardLabel('projectId')] = dto.projectId;
+
       const network = await this.dockerService.client.createNetwork({
         Name: this.generateRandomName(8, dto.name),
         Driver: 'bridge',
+        Labels: labels,
       });
 
       return toDto(NetworkResponseDto, await network.inspect());

@@ -207,6 +207,21 @@ describe('Networks (e2e)', () => {
       expect(fns.createNetwork).toHaveBeenCalledWith({
         Name: expect.stringMatching(/^shipyard-my-network-[0-9a-f]{16}$/),
         Driver: 'bridge',
+        Labels: {},
+      });
+    });
+
+    it('records the owning project as a shipyard.projectId label', async () => {
+      await request(app.getHttpServer())
+        .post('/docker/networks')
+        .set(auth)
+        .send({ name: 'my-network', projectId: 'prj-1' })
+        .expect(201);
+
+      expect(fns.createNetwork).toHaveBeenCalledWith({
+        Name: expect.stringMatching(/^shipyard-my-network-[0-9a-f]{16}$/),
+        Driver: 'bridge',
+        Labels: { 'shipyard.projectId': 'prj-1' },
       });
     });
 

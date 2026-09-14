@@ -157,6 +157,22 @@ describe('Volumes (e2e)', () => {
       });
     });
 
+    it('records the owning service as a shipyard.serviceId label', async () => {
+      await request(app.getHttpServer())
+        .post('/docker/volumes')
+        .set(auth)
+        .send({ name: 'data', serviceId: 'svc-1' })
+        .expect(201);
+
+      expect(fns.createVolume).toHaveBeenCalledWith({
+        Name: expect.stringMatching(/^shipyard-api-.*-data$/),
+        Labels: {
+          'created-by': 'shipyard-api',
+          'shipyard.serviceId': 'svc-1',
+        },
+      });
+    });
+
     it('rejects a missing name', async () => {
       await request(app.getHttpServer())
         .post('/docker/volumes')

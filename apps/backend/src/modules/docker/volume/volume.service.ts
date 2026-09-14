@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DockerService } from '../docker.service';
 import { PROJECT_NAME } from '@app/core/constants';
-import { toDto } from '@app/shared/util';
+import { toDto, shipyardLabel } from '@app/shared/util';
 import { DockerVolumeDto } from './dto/volume-response.dto';
+import { CreateVolumeDto } from './dto/create-volume.dto';
 import { DeleteVolumeDto } from './dto/delete-volume.dto';
 
 @Injectable()
@@ -20,15 +21,18 @@ export class VolumeService {
     }
   }
 
-  async create(name: string): Promise<DockerVolumeDto> {
+  async create(dto: CreateVolumeDto): Promise<DockerVolumeDto> {
     try {
-      const volumeName = this.generateRandomName(name);
+      const labels: Record<string, string> = {
+        'created-by': 'shipyard-api',
+      };
+      if (dto.serviceId) labels[shipyardLabel('serviceId')] = dto.serviceId;
+
+      const volumeName = this.generateRandomName(dto.name);
 
       await this.dockerService.client.createVolume({
         Name: volumeName,
-        Labels: {
-          'created-by': 'shipyard-api',
-        },
+        Labels: labels,
       });
 
       // dockerode resolves createVolume to a Volume handle (not the response
