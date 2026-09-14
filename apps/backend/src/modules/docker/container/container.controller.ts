@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -21,6 +22,7 @@ import { JwtAuthGuard } from '@app/shared/auth';
 import { ListContainerFilterParamsDto } from './dto/listcontainer-filter.dto';
 import {
   ContainerActionDto,
+  ContainerTimeoutDto,
   DockerContainerDto,
   KillContainerDto,
 } from './dto/docker-container.dto';
@@ -68,16 +70,22 @@ export class ContainerController {
   @ApiOperation({ summary: 'Stop a container' })
   @ApiParam({ name: 'id', description: 'Container ID or name' })
   @ApiOkResponse({ type: ContainerActionDto })
-  async stopContainer(@Param('id') id: string) {
-    return this.containerService.stopContainer(id);
+  async stopContainer(
+    @Param('id') id: string,
+    @Body() dto: ContainerTimeoutDto,
+  ) {
+    return this.containerService.stopContainer(id, dto.t);
   }
 
   @Post(ROUTES.DOCKER_CONTAINERS.RESTART)
   @ApiOperation({ summary: 'Restart a container' })
   @ApiParam({ name: 'id', description: 'Container ID or name' })
   @ApiOkResponse({ type: ContainerActionDto })
-  async restartContainer(@Param('id') id: string) {
-    return this.containerService.restartContainer(id);
+  async restartContainer(
+    @Param('id') id: string,
+    @Body() dto: ContainerTimeoutDto,
+  ) {
+    return this.containerService.restartContainer(id, dto.t);
   }
 
   @Post(ROUTES.DOCKER_CONTAINERS.KILL)
@@ -88,7 +96,7 @@ export class ContainerController {
     return this.containerService.killContainer(id, dto.signal);
   }
 
-  @Post(ROUTES.DOCKER_CONTAINERS.REMOVE)
+  @Delete(ROUTES.DOCKER_CONTAINERS.REMOVE)
   @ApiOperation({ summary: 'Remove a container' })
   @ApiParam({ name: 'id', description: 'Container ID or name' })
   @ApiOkResponse({ type: ContainerActionDto })

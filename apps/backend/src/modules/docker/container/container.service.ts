@@ -8,7 +8,7 @@ import {
 } from './dto/docker-container.dto';
 import { ContainerDetailDto } from './dto/container-detail.dto';
 import { ListContainerFilterParamsDto } from './dto/listcontainer-filter.dto';
-import { toDto } from '@app/shared/util';
+import { shipyardLabel, toDto } from '@app/shared/util';
 import type { ContainerKillSignal } from '@workspace/types';
 import { CreateContainerDto } from './dto/create-container.dto';
 import { PrismaService } from '@app/shared/services/prisma/prisma.service';
@@ -78,7 +78,9 @@ export class ContainerService {
 
   async startContainer(containerId: string): Promise<ContainerActionDto> {
     try {
-      await this.dockerService.getContainer(containerId).start();
+      await this.runContainerAction(containerId, 'started', () =>
+        this.dockerService.getContainer(containerId).start(),
+      );
 
       return { id: containerId, status: 'started' };
     } catch (error) {
@@ -87,9 +89,14 @@ export class ContainerService {
     }
   }
 
-  async stopContainer(containerId: string): Promise<ContainerActionDto> {
+  async stopContainer(
+    containerId: string,
+    t: number = 10,
+  ): Promise<ContainerActionDto> {
     try {
-      await this.dockerService.getContainer(containerId).stop({ t: 10 });
+      await this.runContainerAction(containerId, 'stopped', () =>
+        this.dockerService.getContainer(containerId).stop({ t }),
+      );
 
       return { id: containerId, status: 'stopped' };
     } catch (error) {
@@ -98,9 +105,14 @@ export class ContainerService {
     }
   }
 
-  async restartContainer(containerId: string): Promise<ContainerActionDto> {
+  async restartContainer(
+    containerId: string,
+    t: number = 10,
+  ): Promise<ContainerActionDto> {
     try {
-      await this.dockerService.getContainer(containerId).restart();
+      await this.runContainerAction(containerId, 'restarted', () =>
+        this.dockerService.getContainer(containerId).restart({ t }),
+      );
 
       return { id: containerId, status: 'running' };
     } catch (error) {
@@ -287,12 +299,49 @@ export class ContainerService {
     }
   }
 
+  private async runContainerAction<T>(
+    containerId: string,
+    verb: string,
+    action: () => Promise<T>,
+  ): Promise<T> {
+    // read labels before the action; a removed container can't be inspected
+    const refs = await this.readContainerRefs(containerId);
+
+    const result = await action();
+
+    await this.writeDeploymentLog(`Container ${containerId} ${verb}`, refs);
+
+    return result;
+  }
+
+  private async readContainerRefs(
+    containerId: string,
+  ): Promise<{ serviceId?: string; deploymentId?: string }> {
+    try {
+      const info = await this.dockerService.getContainer(containerId).inspect();
+      const labels = info.Config?.Labels ?? {};
+
+      return {
+        serviceId: labels[this.getLabel('serviceId')],
+        deploymentId: labels[this.getLabel('deploymentId')],
+      };
+    } catch (error) {
+      // labels are best-effort; logging must never fail the action
+      this.logger.warn(
+        `Failed to read labels for container ${containerId}: ${String(error)}`,
+      );
+      return {};
+    }
+  }
+
   async killContainer(
     containerId: string,
     signal: ContainerKillSignal = 'SIGTERM',
   ): Promise<ContainerActionDto> {
     try {
-      await this.dockerService.getContainer(containerId).kill({ signal });
+      await this.runContainerAction(containerId, 'killed', () =>
+        this.dockerService.getContainer(containerId).kill({ signal }),
+      );
 
       return { id: containerId, status: 'killed' };
     } catch (error) {
@@ -307,9 +356,11 @@ export class ContainerService {
     removeVolumes: boolean = false,
   ): Promise<ContainerActionDto> {
     try {
-      await this.dockerService
-        .getContainer(containerId)
-        .remove({ force, v: removeVolumes });
+      await this.runContainerAction(containerId, 'removed', () =>
+        this.dockerService
+          .getContainer(containerId)
+          .remove({ force, v: removeVolumes }),
+      );
 
       return { id: containerId, status: 'removed' };
     } catch (error) {
@@ -318,7 +369,9 @@ export class ContainerService {
     }
   }
 
+  async getContainerLogs() {}
+
   private getLabel(lable: string) {
-    return `shipyard.${lable}`;
+    return shipyardLabel(lable);
   }
 }

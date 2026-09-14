@@ -45,9 +45,6 @@ export const ROUTES = {
     TAGNAME: 'Docker',
     CONTROLLER: 'docker',
     HEALTH: 'health',
-    LIST_IMAGES: 'images',
-    LIST_VOLUMES: 'volumes',
-    LIST_NETWORKS: 'networks',
   },
 
   DOCKER_CONTAINERS: {
@@ -60,7 +57,8 @@ export const ROUTES = {
     STOP: ':id/stop',
     RESTART: ':id/restart',
     KILL: ':id/kill',
-    REMOVE: ':id/remove',
+    REMOVE: ':id',
+    LOGS: ':id/logs',
   },
 
   DOCKER_NETWORKS: {

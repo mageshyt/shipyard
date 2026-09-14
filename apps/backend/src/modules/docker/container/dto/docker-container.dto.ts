@@ -1,11 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 import type {
   ContainerAction,
   ContainerKillSignal,
   ContainerNetworkInfo,
   ContainerPort,
+  ContainerTimeout,
   DockerContainer,
   KillContainer,
 } from '@workspace/types';
@@ -124,4 +125,17 @@ export class KillContainerDto implements KillContainer {
   @IsOptional()
   @IsEnum(CONTAINER_KILL_SIGNALS)
   signal: ContainerKillSignal = CONTAINER_KILL_SIGNALS.SIGTERM;
+}
+
+export class ContainerTimeoutDto implements ContainerTimeout {
+  @ApiPropertyOptional({
+    description: 'Seconds to wait before killing the container',
+    example: 10,
+    default: 10,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(300)
+  t?: number;
 }

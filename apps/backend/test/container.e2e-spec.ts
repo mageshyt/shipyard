@@ -412,6 +412,54 @@ describe('Containers (e2e)', () => {
     });
   });
 
+  describe('stop/restart timeout', () => {
+    it('stop defaults t to 10', async () => {
+      await request(app.getHttpServer())
+        .post(`/docker/containers/${id}/stop`)
+        .set(auth)
+        .expect(201);
+
+      expect(fns.stop).toHaveBeenCalledWith({ t: 10 });
+    });
+
+    it('stop forwards an explicit t', async () => {
+      await request(app.getHttpServer())
+        .post(`/docker/containers/${id}/stop`)
+        .set(auth)
+        .send({ t: 30 })
+        .expect(201);
+
+      expect(fns.stop).toHaveBeenCalledWith({ t: 30 });
+    });
+
+    it('restart defaults t to 10', async () => {
+      await request(app.getHttpServer())
+        .post(`/docker/containers/${id}/restart`)
+        .set(auth)
+        .expect(201);
+
+      expect(fns.restart).toHaveBeenCalledWith({ t: 10 });
+    });
+
+    it('restart forwards an explicit t', async () => {
+      await request(app.getHttpServer())
+        .post(`/docker/containers/${id}/restart`)
+        .set(auth)
+        .send({ t: 30 })
+        .expect(201);
+
+      expect(fns.restart).toHaveBeenCalledWith({ t: 30 });
+    });
+
+    it('rejects an out-of-range t', async () => {
+      await request(app.getHttpServer())
+        .post(`/docker/containers/${id}/stop`)
+        .set(auth)
+        .send({ t: 500 })
+        .expect(400);
+    });
+  });
+
   describe('POST /docker/containers/:id/kill', () => {
     it('defaults to SIGTERM', async () => {
       const res = await request(app.getHttpServer())
@@ -443,15 +491,55 @@ describe('Containers (e2e)', () => {
     });
   });
 
-  describe('POST /docker/containers/:id/remove', () => {
+  describe('DELETE /docker/containers/:id', () => {
     it('forwards force and volume flags', async () => {
       const res = await request(app.getHttpServer())
-        .post(`/docker/containers/${id}/remove?force=true&v=true`)
+        .delete(`/docker/containers/${id}?force=true&v=true`)
         .set(auth)
-        .expect(201);
+        .expect(200);
 
       expect(res.body).toEqual({ id, status: 'removed' });
       expect(fns.remove).toHaveBeenCalledWith({ force: true, v: true });
+    });
+  });
+
+  describe('action logging', () => {
+    it('writes a log row tied to the container labels', async () => {
+      fns.inspect.mockResolvedValue({
+        ...rawInspect,
+        Config: {
+          Labels: {
+            'shipyard.serviceId': 'svc-1',
+            'shipyard.deploymentId': 'dep-1',
+          },
+        },
+      });
+
+      await request(app.getHttpServer())
+        .post(`/docker/containers/${id}/start`)
+        .set(auth)
+        .expect(201);
+
+      expect(prismaFake.log.create).toHaveBeenCalledWith({
+        data: {
+          message: `Container ${id} started`,
+          level: 'INFO',
+          serviceId: 'svc-1',
+          deploymentId: 'dep-1',
+        },
+      });
+    });
+
+    it('still performs the action when labels cannot be read', async () => {
+      fns.inspect.mockRejectedValueOnce(new Error('no such container'));
+
+      const res = await request(app.getHttpServer())
+        .post(`/docker/containers/${id}/start`)
+        .set(auth)
+        .expect(201);
+
+      expect(res.body).toEqual({ id, status: 'started' });
+      expect(fns.start).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -463,7 +551,7 @@ describe('Containers (e2e)', () => {
       ['post', `/docker/containers/${id}/stop`],
       ['post', `/docker/containers/${id}/restart`],
       ['post', `/docker/containers/${id}/kill`],
-      ['post', `/docker/containers/${id}/remove`],
+      ['delete', `/docker/containers/${id}`],
     ])('%s %s rejects requests without a token', async (method, path) => {
       await request(app.getHttpServer())[method](path).expect(401);
     });
