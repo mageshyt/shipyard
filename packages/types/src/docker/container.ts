@@ -105,3 +105,28 @@ export interface ContainerDetail {
   HostConfig: ContainerHostConfig;
   Mounts: ContainerMount[];
 }
+
+export interface CreateContainerPort {
+  host: number;
+  container: number;
+  protocol?: 'tcp' | 'udp';
+}
+
+export interface CreateContainerVolume {
+  name: string;
+  target: string;
+  readOnly?: boolean;
+}
+
+export interface CreateContainer {
+  image: string;
+  serviceId?: string;
+  projectId?: string;
+  deploymentId?: string;
+  name?: string;
+  env?: string[];
+  ports?: CreateContainerPort[];
+  volumes?: CreateContainerVolume[];
+  network?: string;
+  cmd?: string[];
+}

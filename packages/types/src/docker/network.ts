@@ -32,3 +32,9 @@ export interface NetworkResponse {
 export interface CreateNetwork {
   name: string;
 }
+
+export interface NetworkConnectionResponse {
+  networkId: string;
+  containerId: string;
+  status: 'connected' | 'disconnected';
+}
