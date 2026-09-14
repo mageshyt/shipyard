@@ -193,14 +193,24 @@ describe('Images (e2e)', () => {
   });
 
   describe('DELETE /docker/images/:id', () => {
-    it('removes the image by id', async () => {
-      await request(app.getHttpServer())
+    it('removes the image by id, defaulting force to false', async () => {
+      const res = await request(app.getHttpServer())
         .delete(`/docker/images/${id}`)
         .set(auth)
         .expect(200);
 
+      expect(res.body).toEqual({ id, removed: true });
       expect(getImage).toHaveBeenCalledWith(id);
-      expect(fns.remove).toHaveBeenCalledTimes(1);
+      expect(fns.remove).toHaveBeenCalledWith({ force: false });
+    });
+
+    it('forwards an explicit force flag', async () => {
+      await request(app.getHttpServer())
+        .delete(`/docker/images/${id}?force=true`)
+        .set(auth)
+        .expect(200);
+
+      expect(fns.remove).toHaveBeenCalledWith({ force: true });
     });
 
     it('surfaces a 500 when removal fails', async () => {

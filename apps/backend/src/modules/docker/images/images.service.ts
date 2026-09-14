@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DockerService } from '../docker.service';
 import { PullImageDto } from './dto/pull-image.dto';
-import { DockerImageDto } from './dto/image-response.dto';
+import {
+  DockerImageDto,
+  RemoveImageResponseDto,
+} from './dto/image-response.dto';
 import { toDto } from '@app/shared/util';
 import type { PullImageResponse } from '@workspace/types';
 
@@ -44,10 +47,15 @@ export class ImagesService {
     }
   }
 
-  remove(id: string) {
+  async remove(
+    id: string,
+    force: boolean = false,
+  ): Promise<RemoveImageResponseDto> {
     try {
       const image = this.dockerService.client.getImage(id);
-      return image.remove();
+      await image.remove({ force });
+
+      return { id, removed: true };
     } catch (error) {
       this.logger.error('Error removing image:', error);
       throw error;

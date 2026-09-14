@@ -4,6 +4,7 @@ import type {
   DockerImage,
   ImageDescriptor,
   PullImageResponse,
+  RemoveImageResponse,
 } from '@workspace/types';
 
 export class ImageDescriptorDto implements ImageDescriptor {
@@ -71,4 +72,14 @@ export class PullImageResponseDto implements PullImageResponse {
   @ApiProperty({ example: 'Successfully pulled image nginx:latest' })
   @Expose()
   message!: string;
+}
+
+export class RemoveImageResponseDto implements RemoveImageResponse {
+  @ApiProperty({ example: 'sha256:111' })
+  @Expose()
+  id!: string;
+
+  @ApiProperty({ example: true })
+  @Expose()
+  removed!: boolean;
 }
