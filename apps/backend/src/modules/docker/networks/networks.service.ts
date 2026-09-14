@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DockerService } from '../docker.service';
 import { CreateNetworkDto } from './dto/create-network.dto';
 import { NetworkResponseDto } from './dto/network-response.dto';
+import { NetworkConnectionResponseDto } from './dto/network-connection.dto';
 import { toDto } from '@app/shared/util';
 
 @Injectable()
@@ -57,6 +58,30 @@ export class NetworksService {
     }
   }
 
+  async toggleNetworkToContainer(
+    containerId: string,
+    networkId: string,
+    action: 'connect' | 'disconnect',
+  ): Promise<NetworkConnectionResponseDto> {
+    try {
+      const network = this.dockerService.client.getNetwork(networkId);
+
+      if (action === 'connect') {
+        await network.connect({ Container: containerId });
+      } else {
+        await network.disconnect({ Container: containerId });
+      }
+
+      return {
+        networkId,
+        containerId,
+        status: action === 'connect' ? 'connected' : 'disconnected',
+      };
+    } catch (error) {
+      this.logger.error(`Error ${action}ing container on network:`, error);
+      throw error;
+    }
+  }
   private generateRandomName(length: number, network: string): string {
     const randomChars = crypto.randomBytes(length).toString('hex');
 

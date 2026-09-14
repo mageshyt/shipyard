@@ -38,10 +38,14 @@ describe('Networks (e2e)', () => {
     createNetwork: jest.fn<(opts: unknown) => Promise<unknown>>(),
     inspect: jest.fn<() => Promise<unknown>>(),
     remove: jest.fn<() => Promise<unknown>>(),
+    connect: jest.fn<(opts: unknown) => Promise<unknown>>(),
+    disconnect: jest.fn<(opts: unknown) => Promise<unknown>>(),
   };
   const getNetwork = jest.fn(() => ({
     inspect: fns.inspect,
     remove: fns.remove,
+    connect: fns.connect,
+    disconnect: fns.disconnect,
   }));
   const dockerFake = {
     client: {
@@ -137,6 +141,8 @@ describe('Networks (e2e)', () => {
     fns.inspect.mockResolvedValue(rawNetwork);
     fns.createNetwork.mockResolvedValue({ inspect: fns.inspect });
     fns.remove.mockResolvedValue(undefined);
+    fns.connect.mockResolvedValue(undefined);
+    fns.disconnect.mockResolvedValue(undefined);
   });
 
   describe('GET /docker/networks', () => {
@@ -242,6 +248,74 @@ describe('Networks (e2e)', () => {
     it('rejects requests without a token', async () => {
       await request(app.getHttpServer())
         .delete(`/docker/networks/${id}`)
+        .expect(401);
+    });
+  });
+
+  describe('POST /docker/networks/:id/connect/:containerId', () => {
+    const containerId = 'abc123';
+
+    it('connects the container and reports the status', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/docker/networks/${id}/connect/${containerId}`)
+        .set(auth)
+        .expect(201);
+
+      expect(res.body).toEqual({
+        networkId: id,
+        containerId,
+        status: 'connected',
+      });
+      expect(getNetwork).toHaveBeenCalledWith(id);
+      expect(fns.connect).toHaveBeenCalledWith({ Container: containerId });
+      expect(fns.disconnect).not.toHaveBeenCalled();
+    });
+
+    it('surfaces a 500 when the daemon call fails', async () => {
+      fns.connect.mockRejectedValueOnce(new Error('no such container'));
+      await request(app.getHttpServer())
+        .post(`/docker/networks/${id}/connect/${containerId}`)
+        .set(auth)
+        .expect(500);
+    });
+
+    it('rejects requests without a token', async () => {
+      await request(app.getHttpServer())
+        .post(`/docker/networks/${id}/connect/${containerId}`)
+        .expect(401);
+    });
+  });
+
+  describe('POST /docker/networks/:id/disconnect/:containerId', () => {
+    const containerId = 'abc123';
+
+    it('disconnects the container and reports the status', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/docker/networks/${id}/disconnect/${containerId}`)
+        .set(auth)
+        .expect(201);
+
+      expect(res.body).toEqual({
+        networkId: id,
+        containerId,
+        status: 'disconnected',
+      });
+      expect(getNetwork).toHaveBeenCalledWith(id);
+      expect(fns.disconnect).toHaveBeenCalledWith({ Container: containerId });
+      expect(fns.connect).not.toHaveBeenCalled();
+    });
+
+    it('surfaces a 500 when the daemon call fails', async () => {
+      fns.disconnect.mockRejectedValueOnce(new Error('not connected'));
+      await request(app.getHttpServer())
+        .post(`/docker/networks/${id}/disconnect/${containerId}`)
+        .set(auth)
+        .expect(500);
+    });
+
+    it('rejects requests without a token', async () => {
+      await request(app.getHttpServer())
+        .post(`/docker/networks/${id}/disconnect/${containerId}`)
         .expect(401);
     });
   });

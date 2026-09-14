@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '@app/shared/auth';
 import { NetworksService } from './networks.service';
 import { CreateNetworkDto } from './dto/create-network.dto';
 import { NetworkResponseDto } from './dto/network-response.dto';
+import { NetworkConnectionResponseDto } from './dto/network-connection.dto';
 
 @Controller(ROUTES.DOCKER_NETWORKS.CONTROLLER)
 @ApiTags(ROUTES.DOCKER_NETWORKS.TAGNAME)
@@ -54,5 +55,37 @@ export class NetworksController {
   @ApiParam({ name: 'id', description: 'Network ID' })
   async deleteNetwork(@Param('id') id: string) {
     return this.networksService.deleteNetwork(id);
+  }
+
+  @Post(ROUTES.DOCKER_NETWORKS.CONNECT)
+  @ApiOperation({ summary: 'Connect a container to a network' })
+  @ApiParam({ name: 'id', description: 'Network ID' })
+  @ApiParam({ name: 'containerId', description: 'Container ID' })
+  @ApiOkResponse({ type: NetworkConnectionResponseDto })
+  async connectContainerToNetwork(
+    @Param('id') networkId: string,
+    @Param('containerId') containerId: string,
+  ) {
+    return this.networksService.toggleNetworkToContainer(
+      containerId,
+      networkId,
+      'connect',
+    );
+  }
+
+  @Post(ROUTES.DOCKER_NETWORKS.DISCONNECT)
+  @ApiOperation({ summary: 'Disconnect a container from a network' })
+  @ApiParam({ name: 'id', description: 'Network ID' })
+  @ApiParam({ name: 'containerId', description: 'Container ID' })
+  @ApiOkResponse({ type: NetworkConnectionResponseDto })
+  async disconnectContainerFromNetwork(
+    @Param('id') networkId: string,
+    @Param('containerId') containerId: string,
+  ) {
+    return this.networksService.toggleNetworkToContainer(
+      containerId,
+      networkId,
+      'disconnect',
+    );
   }
 }
