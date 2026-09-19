@@ -9,12 +9,14 @@ import { loggerConfig } from '@app/core/config/logger.config';
 import { LoggerModule } from 'nestjs-pino';
 import { ConfigModule } from '@nestjs/config';
 import { ServicesModule } from '@app/shared/services/services.module';
+import { QueueModule } from '@app/core/queue/queue.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(appOptions.configModuleOptions),
     LoggerModule.forRoot(loggerConfig),
     ServicesModule,
+    QueueModule,
     Modules,
   ],
   controllers: [AppController],
