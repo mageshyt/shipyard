@@ -1,11 +1,14 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Query,
+  Sse,
   UseGuards,
 } from '@nestjs/common';
 import { ContainerService } from './container.service';
@@ -19,6 +22,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@app/shared/auth';
+import { SkipStandardResponse } from '@app/shared/decorators';
 import { ListContainerFilterParamsDto } from './dto/listcontainer-filter.dto';
 import {
   ContainerActionDto,
@@ -56,6 +60,24 @@ export class ContainerController {
   @ApiOkResponse({ type: ContainerDetailDto })
   async getContainer(@Param('id') id: string) {
     return this.containerService.findContainerById(id);
+  }
+
+  @Sse(ROUTES.DOCKER_CONTAINERS.LOGS)
+  @SkipStandardResponse()
+  @ApiOperation({ summary: 'Stream container logs' })
+  @ApiParam({ name: 'id', description: 'Container ID or name' })
+  @ApiQuery({
+    name: 'tail',
+    required: false,
+    type: Number,
+    description:
+      'Number of historical lines to send before following (0 = only new lines)',
+  })
+  async streamContainerLogs(
+    @Param('id') id: string,
+    @Query('tail', new DefaultValuePipe(100), ParseIntPipe) tail: number,
+  ) {
+    return this.containerService.streamContainerLogs(id, tail);
   }
 
   @Post(ROUTES.DOCKER_CONTAINERS.START)

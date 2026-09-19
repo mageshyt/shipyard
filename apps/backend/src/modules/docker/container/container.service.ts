@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, MessageEvent } from '@nestjs/common';
 import * as crypto from 'crypto';
 import Docker from 'dockerode';
 import { DockerService } from '../docker.service';
@@ -13,6 +13,8 @@ import type { ContainerKillSignal } from '@workspace/types';
 import { CreateContainerDto } from './dto/create-container.dto';
 import { PrismaService } from '@app/shared/services/prisma/prisma.service';
 import { LogLevel } from 'src/generated/prisma/client';
+import { finalize, merge, Observable } from 'rxjs';
+import { PassThrough, Readable } from 'stream';
 
 @Injectable()
 export class ContainerService {
@@ -21,7 +23,7 @@ export class ContainerService {
   constructor(
     private readonly dockerService: DockerService,
     private readonly db: PrismaService,
-  ) {}
+  ) { }
 
   async listContainers(
     filters: ListContainerFilterParamsDto,
@@ -125,9 +127,9 @@ export class ContainerService {
     try {
       const service = dto.serviceId
         ? await this.db.service.findUnique({
-            where: { id: dto.serviceId },
-            select: { id: true, slug: true, projectId: true },
-          })
+          where: { id: dto.serviceId },
+          select: { id: true, slug: true, projectId: true },
+        })
         : null;
 
       const project = await this.resolveProject(
@@ -167,9 +169,9 @@ export class ContainerService {
   private resolveProject(projectId?: string) {
     return projectId
       ? this.db.project.findUnique({
-          where: { id: projectId },
-          select: { id: true, slug: true },
-        })
+        where: { id: projectId },
+        select: { id: true, slug: true },
+      })
       : Promise.resolve(null);
   }
 
@@ -207,9 +209,9 @@ export class ContainerService {
   ): Promise<string[] | undefined> {
     const fromDb = serviceId
       ? await this.db.environmentVariable.findMany({
-          where: { serviceId },
-          select: { key: true, value: true },
-        })
+        where: { serviceId },
+        select: { key: true, value: true },
+      })
       : [];
 
     const merged = new Map<string, string>();
@@ -369,7 +371,93 @@ export class ContainerService {
     }
   }
 
-  async getContainerLogs() {}
+  async streamContainerLogs(
+    containerId: string,
+    tail: number = 100,
+  ): Promise<Observable<MessageEvent>> {
+    const container = this.dockerService.getContainer(containerId);
+
+    const logOptions: Docker.ContainerLogsOptions & { follow: true } = {
+      stdout: true,
+      stderr: true,
+      tail,
+      timestamps: true,
+      follow: true,
+    };
+
+    const logStream = (await container.logs(logOptions)) as Readable;
+
+    const { Config } = await container.inspect();
+    const isTty = Config?.Tty ?? false;
+
+    const stdout = new PassThrough();
+    const stderr = new PassThrough();
+
+    const sources: Array<{ stream: 'stdout' | 'stderr'; readable: Readable }> =
+      isTty
+        ? [{ stream: 'stdout', readable: logStream }]
+        : [
+          { stream: 'stdout', readable: stdout },
+          { stream: 'stderr', readable: stderr },
+        ];
+
+    if (!isTty) {
+      container.modem.demuxStream(logStream, stdout, stderr);
+    }
+
+    this.logger.log(`Streaming logs for container ${containerId}`);
+
+    return merge(
+      ...sources.map((source) => this.toLines(source.readable, source.stream)),
+    ).pipe(
+      finalize(() => {
+        this.logger.log(`Stopped streaming logs for container ${containerId}`);
+        logStream.destroy();
+        stdout.destroy();
+        stderr.destroy();
+      }),
+    );
+  }
+
+  private toLines(
+    readable: Readable,
+    stream: 'stdout' | 'stderr',
+  ): Observable<MessageEvent> {
+    return new Observable<MessageEvent>((subscriber) => {
+      let carry = '';
+
+      const emit = (line: string) => {
+        const trimmed = line.replace(/\r$/, '');
+        if (trimmed.length > 0) {
+          subscriber.next({ data: trimmed, type: stream });
+        }
+      };
+
+      const onData = (chunk: Buffer) => {
+        carry += chunk.toString('utf8');
+        const lines = carry.split('\n');
+        carry = lines.pop() ?? '';
+        lines.forEach(emit);
+      };
+
+      const onEnd = () => {
+        emit(carry);
+        subscriber.complete();
+      };
+
+      const onError = (error: Error) => subscriber.error(error);
+
+      readable.on('data', onData);
+      readable.on('end', onEnd);
+      readable.on('error', onError);
+
+      return () => {
+        readable.off('data', onData);
+        readable.off('end', onEnd);
+        readable.off('error', onError);
+      };
+    });
+  }
 
   private getLabel(lable: string) {
     return shipyardLabel(lable);
