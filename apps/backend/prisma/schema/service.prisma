@@ -19,13 +19,25 @@ enum BuildType {
   NATIVE
 }
 
+enum ServiceSource {
+  GIT
+  UPLOAD
+  IMAGE
+}
+
 model Service {
   id        String        @id @default(ulid())
   name      String
-  slug      String?       @unique
+  slug      String?
   type      ServiceType
   status    ServiceStatus @default(CREATED)
   buildType BuildType     @map("build_type")
+  source    ServiceSource @default(GIT)
+
+  repositoryUrl String? @map("repository_url")
+  branch        String?
+  archiveKey    String? @map("archive_key")
+  imageRef      String? @map("image_ref")
 
   rootPath          String? @map("root_path")
   dockerfilePath    String? @map("dockerfile_path")
@@ -45,6 +57,7 @@ model Service {
   environmentVariables EnvironmentVariable[]
   logs                 Log[]
 
+  @@unique([projectId, slug])
   @@index([projectId])
 }
 
@@ -68,27 +81,58 @@ model Domain {
   @@index([serviceId])
 }
 
-model Deployment {
-  id         String        @id @default(ulid())
-  branch     String?
-  commitHash String?       @map("commit_hash")
-  status     ServiceStatus @default(CREATED)
+enum DeploymentSource {
+  MANUAL
+  GIT
+  RETRY
+}
 
-  createdAt  DateTime  @default(now())
+enum DeploymentStatus {
+  QUEUED
+  PREPARING
+  BUILDING
+  DEPLOYING
+  RUNNING
+  FAILED
+  CANCELLED
+}
+
+model Deployment {
+  id String @id @default(ulid())
+
+  status DeploymentStatus @default(QUEUED)
+  source DeploymentSource @default(MANUAL)
+
+  branch     String?
+  commitHash String? @map("commit_hash")
+
+  startedAt  DateTime? @map("started_at")
   finishedAt DateTime?
-  updatedAt  DateTime  @updatedAt
+  error      String?
+
+  attempt Int     @default(1)
+  jobId   String? @map("job_id")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   serviceId String
   service   Service @relation(fields: [serviceId], references: [id])
   logs      Log[]
 
+  parentId String? @map("parent_id")
+  parent   Deployment?  @relation("DeploymentRetry", fields: [parentId], references: [id])
+  children Deployment[] @relation("DeploymentRetry")
+
   @@index([serviceId, createdAt])
+  @@index([status])
 }
 
 model EnvironmentVariable {
-  id    String @id @default(ulid())
-  key   String
-  value String
+  id       String  @id @default(ulid())
+  key      String
+  value    String
+  isSecret Boolean @default(false) @map("is_secret")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

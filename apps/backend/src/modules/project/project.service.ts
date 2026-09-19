@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -8,6 +7,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { PrismaService } from '@app/shared/services/prisma/prisma.service';
 import { Prisma } from 'src/generated/prisma/client';
+import { generateSlug } from '@app/shared/util';
 import { Project } from './entities/project.entity';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class ProjectService {
       return await this.db.project.create({
         data: {
           ...createProjectDto,
-          slug: this.generateSlug(createProjectDto.name),
+          slug: generateSlug(createProjectDto.name, 'Project name'),
           ownerId,
         },
       });
@@ -64,7 +64,7 @@ export class ProjectService {
           ...updateProjectDto,
           // only re-slug when the name actually changes (PartialType: name is optional)
           ...(updateProjectDto.name
-            ? { slug: this.generateSlug(updateProjectDto.name) }
+            ? { slug: generateSlug(updateProjectDto.name, 'Project name') }
             : {}),
         },
       });
@@ -95,26 +95,5 @@ export class ProjectService {
       }
       throw error;
     }
-  }
-
-  private generateSlug(name: string): string {
-    // convert name to lowercase
-    const lowerCaseName = name.toLowerCase();
-
-    // replace spaces with hyphens
-
-    const slug = lowerCaseName.replace(/\s+/g, '-');
-
-    // remove special characters
-    const cleanSlug = slug.replace(/[^a-z0-9-]/g, '');
-
-    // names like "!!!" clean down to nothing and would false-collide per owner
-    if (!cleanSlug) {
-      throw new BadRequestException(
-        'Project name must contain at least one letter or number',
-      );
-    }
-
-    return cleanSlug;
   }
 }
