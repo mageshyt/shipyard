@@ -1,4 +1,4 @@
-import type { DefaultJobOptions } from 'bullmq';
+import type { DefaultJobOptions, WorkerOptions } from 'bullmq';
 
 export const DEPLOYMENTS_QUEUE = 'deployments';
 
@@ -17,3 +17,10 @@ export const DEPLOYMENT_TIMEOUT_MS = 30 * 60 * 1000;
 export const DEPLOYMENT_WORKER_CONCURRENCY = Number(
   process.env.DEPLOYMENT_WORKER_CONCURRENCY ?? 3,
 );
+
+export const getDeploymentWorkerConfig = (): Partial<WorkerOptions> => ({
+  concurrency: DEPLOYMENT_WORKER_CONCURRENCY,
+  lockDuration: 180000,
+  stalledInterval: 60000,
+  maxStalledCount: 1,
+});
