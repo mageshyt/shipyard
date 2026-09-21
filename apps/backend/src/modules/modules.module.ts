@@ -8,6 +8,7 @@ import { ContainerModule } from './docker/container/container.module';
 import { NetworksModule } from './docker/networks/networks.module';
 import { ImagesModule } from './docker/images/images.module';
 import { VolumeModule } from './docker/volume/volume.module';
+import { DeploymentModule } from './deployment/deployment.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { VolumeModule } from './docker/volume/volume.module';
     NetworksModule,
     ImagesModule,
     VolumeModule,
+    DeploymentModule,
   ],
 })
 export class Modules {}

@@ -38,6 +38,8 @@ export const configModuleOptions: ConfigModuleOptions = {
 
     THROTTLE_REDIS_URL: Joi.string().optional(),
 
+    DEPLOYMENT_WORKER_CONCURRENCY: Joi.number().default(3),
+
     JWT_SECRET: Joi.string().required(),
     JWT_EXPIRATION_TIME: Joi.string().default('30d'),
   }),

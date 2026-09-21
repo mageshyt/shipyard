@@ -128,11 +128,18 @@ model Deployment {
   @@index([status])
 }
 
+enum EnvVarScope {
+  RUNTIME
+  BUILD
+  BOTH
+}
+
 model EnvironmentVariable {
-  id       String  @id @default(ulid())
+  id       String      @id @default(ulid())
   key      String
   value    String
-  isSecret Boolean @default(false) @map("is_secret")
+  isSecret Boolean     @default(false) @map("is_secret")
+  scope    EnvVarScope @default(RUNTIME)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
