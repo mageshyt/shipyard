@@ -209,7 +209,7 @@ export class ContainerService {
   ): Promise<string[] | undefined> {
     const fromDb = serviceId
       ? await this.db.environmentVariable.findMany({
-        where: { serviceId },
+        where: { serviceId, scope: { in: ['RUNTIME', 'BOTH'] } },
         select: { key: true, value: true },
       })
       : [];
@@ -369,6 +369,36 @@ export class ContainerService {
       this.logger.error(`Error removing container ${containerId}:`, error);
       throw error;
     }
+  }
+
+  async removeServiceContainers(serviceId: string): Promise<string[]> {
+    const containers = await this.dockerService.client.listContainers({
+      all: true,
+      filters: {
+        label: [`${this.getLabel('serviceId')}=${serviceId}`],
+      },
+    });
+
+    const removed: string[] = [];
+    for (const info of containers) {
+      const container = this.dockerService.getContainer(info.Id);
+      try {
+        await container.stop({ t: 10 });
+      } catch (error) {
+        // 304 already stopped, 404 already gone — both fine
+        const status = (error as { statusCode?: number }).statusCode;
+        if (status !== 304 && status !== 404) throw error;
+      }
+      await container.remove();
+      removed.push(info.Id);
+    }
+
+    if (removed.length > 0) {
+      this.logger.log(
+        `Removed ${removed.length} previous container(s) for service ${serviceId}`,
+      );
+    }
+    return removed;
   }
 
   async streamContainerLogs(

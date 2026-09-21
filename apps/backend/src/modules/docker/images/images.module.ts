@@ -7,5 +7,6 @@ import { DockerModule } from '../docker.module';
   imports: [DockerModule],
   controllers: [ImagesController],
   providers: [ImagesService],
+  exports: [ImagesService],
 })
 export class ImagesModule {}
