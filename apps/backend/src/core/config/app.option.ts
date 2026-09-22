@@ -40,6 +40,8 @@ export const configModuleOptions: ConfigModuleOptions = {
 
     DEPLOYMENT_WORKER_CONCURRENCY: Joi.number().default(3),
 
+    APP_DOMAIN_SUFFIX: Joi.string().default('127.0.0.1.nip.io'),
+
     JWT_SECRET: Joi.string().required(),
     JWT_EXPIRATION_TIME: Joi.string().default('30d'),
   }),

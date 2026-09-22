@@ -148,8 +148,15 @@ export class ContainerService {
         await this.ensureNetwork(network, project?.id);
       }
 
+      const domains = await this.db.domain.findMany({
+        where: { serviceId: service?.id },
+        select: { host: true, containerPort: true },
+        // stable order keeps router indexes (svc-<id>-<i>) fixed across deploys
+        orderBy: { host: 'asc' },
+      });
+
       const container = await this.dockerService.client.createContainer(
-        this.toCreateOptions(dto, name, network, env),
+        this.toCreateOptions(dto, name, network, env, domains),
       );
 
       const containerInfo = await container.inspect();
@@ -237,6 +244,7 @@ export class ContainerService {
     name: string,
     network?: string,
     env?: string[],
+    domains?: { host: string; containerPort: number | null }[] | null,
   ): Docker.ContainerCreateOptions {
     const labels: Record<string, string> = {};
     if (dto.projectId) labels[this.getLabel('projectId')] = dto.projectId;
@@ -244,8 +252,25 @@ export class ContainerService {
     if (dto.deploymentId)
       labels[this.getLabel('deploymentId')] = dto.deploymentId;
 
+    // reverse-proxy labels follow domains: no domain row, no route.
+    // Router name is unique per service so services never clobber each other.
+    if (domains) {
+      domains.forEach((domain, idx) => {
+        const router = `svc-${(dto.serviceId ?? 'x').slice(-6)}-${idx}`;
+        labels['traefik.enable'] = 'true';
+        labels[`traefik.http.routers.${router}.rule`] =
+          `Host(\`${domain.host}\`)`;
+        labels[`traefik.http.routers.${router}.entrypoints`] = 'web';
+        if (domain.containerPort) {
+          labels[`traefik.http.services.${router}.loadbalancer.server.port`] =
+            String(domain.containerPort);
+        }
+      });
+    }
+
     const exposedPorts: Record<string, object> = {};
     const portBindings: Record<string, Array<{ HostPort: string }>> = {};
+
 
     for (const port of dto.ports ?? []) {
       const key = `${port.container}/${port.protocol ?? 'tcp'}`;

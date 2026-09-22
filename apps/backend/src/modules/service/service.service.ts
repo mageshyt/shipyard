@@ -11,6 +11,7 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { ListServiceQueryDto } from './dto/list-service.dto';
 import { Service } from './entities/service.entity';
+import { ConfigService } from '@nestjs/config';
 
 interface SourceConfig {
   repositoryUrl?: string | null;
@@ -20,7 +21,10 @@ interface SourceConfig {
 
 @Injectable()
 export class ServiceService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(
+    private readonly db: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
 
   async create(dto: CreateServiceDto, ownerId: string): Promise<Service> {
     await this.assertProjectOwned(dto.projectId, ownerId);
@@ -29,26 +33,43 @@ export class ServiceService {
     this.assertSourceConfig(source, dto);
 
     try {
-      return await this.db.service.create({
-        data: {
-          name: dto.name,
-          slug: generateSlug(dto.name, 'Service name'),
-          type: dto.type,
-          buildType: dto.buildType,
-          source,
-          repositoryUrl: dto.repositoryUrl,
-          branch: dto.branch,
-          archiveKey: dto.archiveKey,
-          imageRef: dto.imageRef,
-          rootPath: dto.rootPath,
-          dockerfilePath: dto.dockerfilePath,
-          dockerContextPath: dto.dockerContextPath,
-          buildCommand: dto.buildCommand,
-          startCommand: dto.startCommand,
-          advancedConfig: dto.advancedConfig as Prisma.InputJsonValue,
-          projectId: dto.projectId,
-        },
+      const { service } = await this.db.$transaction(async (tx) => {
+        const created = await tx.service.create({
+          data: {
+            name: dto.name,
+            slug: generateSlug(dto.name, 'Service name'),
+            type: dto.type,
+            buildType: dto.buildType,
+            source,
+            repositoryUrl: dto.repositoryUrl,
+            branch: dto.branch,
+            archiveKey: dto.archiveKey,
+            imageRef: dto.imageRef,
+            rootPath: dto.rootPath,
+            dockerfilePath: dto.dockerfilePath,
+            dockerContextPath: dto.dockerContextPath,
+            buildCommand: dto.buildCommand,
+            startCommand: dto.startCommand,
+            advancedConfig: dto.advancedConfig as Prisma.InputJsonValue,
+            projectId: dto.projectId,
+          },
+        });
+
+        const domain = await tx.domain.create({
+          data: {
+            serviceId: created.id,
+            host: this.generateDomainHost(
+              created.slug ?? created.id,
+              created.id,
+            ),
+            status: 'VERIFIED',
+          },
+        });
+
+        return { service: created, domain };
       });
+
+      return service;
     } catch (error) {
       this.rethrowUnique(error, dto.name);
       throw error;
@@ -165,5 +186,12 @@ export class ServiceService {
         `A service named "${name}" already exists in this project`,
       );
     }
+  }
+  private generateDomainHost(slug: string, serviceId: string): string {
+    const suffix = this.config.get<string>(
+      'APP_DOMAIN_SUFFIX',
+      '127.0.0.1.nip.io',
+    );
+    return `${slug}-${serviceId.slice(-6)}.${suffix}`.toLowerCase();
   }
 }
