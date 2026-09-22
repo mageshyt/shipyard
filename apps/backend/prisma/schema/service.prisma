@@ -68,15 +68,18 @@ enum DomainStatus {
 }
 
 model Domain {
-  id     String       @id @default(ulid())
-  host   String       @unique
-  status DomainStatus @default(CREATED)
+  id            String       @id @default(ulid())
+  host          String       @unique
+  containerPort Int?
+  path          String?      @default("/")
+  internalPath  String?      @map("internal_path")
+  status        DomainStatus @default(CREATED)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   serviceId String
-  service   Service @relation(fields: [serviceId], references: [id])
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@index([serviceId])
 }
@@ -120,7 +123,7 @@ model Deployment {
   service   Service @relation(fields: [serviceId], references: [id])
   logs      Log[]
 
-  parentId String? @map("parent_id")
+  parentId String?      @map("parent_id")
   parent   Deployment?  @relation("DeploymentRetry", fields: [parentId], references: [id])
   children Deployment[] @relation("DeploymentRetry")
 
