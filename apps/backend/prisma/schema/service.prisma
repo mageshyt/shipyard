@@ -47,6 +47,8 @@ model Service {
   startCommand   String? @map("start_command")
   advancedConfig Json?   @map("advanced_config")
 
+  ports Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
