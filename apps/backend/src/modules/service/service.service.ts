@@ -51,6 +51,7 @@ export class ServiceService {
             buildCommand: dto.buildCommand,
             startCommand: dto.startCommand,
             advancedConfig: dto.advancedConfig as Prisma.InputJsonValue,
+            ports: dto.ports as unknown as Prisma.InputJsonValue,
             projectId: dto.projectId,
           },
         });
@@ -119,6 +120,7 @@ export class ServiceService {
           ...dto,
           ...(dto.name ? { slug: generateSlug(dto.name, 'Service name') } : {}),
           advancedConfig: dto.advancedConfig as Prisma.InputJsonValue,
+          ports: dto.ports as unknown as Prisma.InputJsonValue,
         },
       });
     } catch (error) {

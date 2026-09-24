@@ -1,18 +1,44 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsEnum,
+  IsIn,
+  IsInt,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
+  ValidateNested,
 } from 'class-validator';
-import type { CreateService } from '@workspace/types';
+import type { CreateService, ServicePortMapping } from '@workspace/types';
 import {
   BuildType,
   ServiceSource,
   ServiceType,
 } from 'src/generated/prisma/client';
+
+export class ServicePortMappingDto implements ServicePortMapping {
+  @ApiProperty({ description: 'Host port to bind', example: 5433 })
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  host!: number;
+
+  @ApiProperty({ description: 'Container port to expose', example: 5432 })
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  container!: number;
+
+  @ApiPropertyOptional({ enum: ['tcp', 'udp'], default: 'tcp' })
+  @IsOptional()
+  @IsIn(['tcp', 'udp'])
+  protocol?: 'tcp' | 'udp';
+}
 
 export class CreateServiceDto implements CreateService {
   @ApiProperty({ description: 'Owning project id', example: '01JABCDEF' })
@@ -108,4 +134,15 @@ export class CreateServiceDto implements CreateService {
   @IsOptional()
   @IsObject()
   advancedConfig?: Record<string, unknown>;
+
+  @ApiPropertyOptional({
+    description:
+      'Published ports for non-HTTP reachability (HTTP goes through Traefik)',
+    type: [ServicePortMappingDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ServicePortMappingDto)
+  ports?: ServicePortMappingDto[];
 }

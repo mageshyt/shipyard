@@ -29,6 +29,12 @@ export const ServiceSource = {
 } as const;
 export type ServiceSource = (typeof ServiceSource)[keyof typeof ServiceSource];
 
+export interface ServicePortMapping {
+  host: number;
+  container: number;
+  protocol?: 'tcp' | 'udp';
+}
+
 export interface Service {
   id: string;
   name: string;
@@ -47,6 +53,7 @@ export interface Service {
   buildCommand: string | null;
   startCommand: string | null;
   advancedConfig: Record<string, unknown> | null;
+  ports: ServicePortMapping[] | null;
   projectId: string;
   /** ISO-8601 string over the wire (Prisma DateTime is serialized on the way out). */
   createdAt: string;
@@ -70,6 +77,7 @@ export interface CreateService {
   buildCommand?: string;
   startCommand?: string;
   advancedConfig?: Record<string, unknown>;
+  ports?: ServicePortMapping[];
 }
 
 export type UpdateService = Partial<Omit<CreateService, 'projectId'>>;
