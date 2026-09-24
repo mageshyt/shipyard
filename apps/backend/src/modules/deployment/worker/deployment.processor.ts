@@ -6,10 +6,14 @@ import { PrismaService } from '@app/shared/services/prisma/prisma.service';
 import { SHIPYARD_NETWORK } from '@app/shared/util';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import type { DeploymentJobData } from '@workspace/types';
+import type { DeploymentJobData, ServicePortMapping } from '@workspace/types';
 import { Job, UnrecoverableError } from 'bullmq';
 import { mkdir, rm } from 'node:fs/promises';
-import { BuildType, ServiceSource } from 'src/generated/prisma/client';
+import {
+  BuildType,
+  ServiceSource,
+  ServiceType,
+} from 'src/generated/prisma/client';
 import { GitFetcher } from './fetchers/git-fetcher';
 import { SourceFetcher } from './fetchers/source-fetcher';
 import { ImageFetcher } from './fetchers/image-fetcher';
@@ -18,6 +22,15 @@ import { transitionDeployment } from '../deployment-status';
 import { DockerBuilder } from './builders/docker-builder';
 import { BuildStrategy } from './builders/build-strategy';
 import { ContainerService } from '@app/modules/docker/container/container.service';
+
+const DATABASE_DATA_PATHS: Record<string, string> = {
+  postgres: '/var/lib/postgresql/data',
+  'pgvector/pgvector:pg': '/var/lib/postgresql/data',
+  mysql: '/var/lib/mysql',
+  mariadb: '/var/lib/mysql',
+  mongo: '/data/db',
+  redis: '/data',
+};
 
 @Processor(DEPLOYMENTS_QUEUE, getDeploymentWorkerConfig())
 export class DeploymentProcessor extends WorkerHost {
@@ -127,22 +140,32 @@ export class DeploymentProcessor extends WorkerHost {
 
       await transitionDeployment(this.db, deploymentId, 'BUILDING');
 
-      // build config
-      const buildStrategy = this.builders[service.buildType];
+      let imageTag: string;
+      if (service.source === 'IMAGE') {
+        if (!service.imageRef) {
+          throw new UnrecoverableError(
+            `Service ${service.id} has no imageRef for IMAGE source`,
+          );
+        }
+        imageTag = service.imageRef;
+      } else {
+        // build config
+        const buildStrategy = this.builders[service.buildType];
 
-      if (!buildStrategy) {
-        throw new UnrecoverableError(
-          `No builder available for build type ${service.buildType}`,
-        );
+        if (!buildStrategy) {
+          throw new UnrecoverableError(
+            `No builder available for build type ${service.buildType}`,
+          );
+        }
+
+        imageTag = await buildStrategy.build({
+          deployment,
+          service,
+          sourceDir: workspace,
+          imageTag: `shipyard/${service.slug ?? service.id}:${deploymentId}`,
+          buildArgs,
+        });
       }
-
-      const imageTag = await buildStrategy.build({
-        deployment,
-        service,
-        sourceDir: workspace,
-        imageTag: `shipyard/${service.slug ?? service.id}:${deploymentId}`,
-        buildArgs,
-      });
 
       this.logger.log(`Deployment ${deploymentId} built image: ${imageTag}`);
 
@@ -154,11 +177,19 @@ export class DeploymentProcessor extends WorkerHost {
       // stop old → start new
       await this.containerService.removeServiceContainers(service.id);
 
+      // declared host:container mappings (validated at service write time)
+      const portMappings =
+        (service.ports as unknown as ServicePortMapping[] | null) ?? undefined;
+
+      const volumes = this.databaseVolume(service);
+
       const container = await this.containerService.createContainer({
         image: imageTag,
         serviceId: service.id,
         deploymentId,
         network: SHIPYARD_NETWORK,
+        ports: portMappings,
+        volumes,
         ...(service.startCommand
           ? { cmd: service.startCommand.split(/\s+/) }
           : {}),
@@ -185,6 +216,33 @@ export class DeploymentProcessor extends WorkerHost {
       throw error;
     }
   }
+
+  private databaseVolume(service: {
+    id: string;
+    type: ServiceType;
+    imageRef: string | null;
+  }): { name: string; target: string }[] | undefined {
+    if (service.type !== ServiceType.DATABASE) return undefined;
+
+    const image = service.imageRef ?? '';
+    const entry = Object.entries(DATABASE_DATA_PATHS).find(([prefix]) =>
+      image.startsWith(prefix),
+    );
+    if (!entry) {
+      this.logger.warn(
+        `No known data path for image ${image}: container will not persist data`,
+      );
+      return undefined;
+    }
+
+    return [
+      {
+        name: `shipyard-data-${service.id.slice(-6).toLowerCase()}`,
+        target: entry[1],
+      },
+    ];
+  }
+
   private async failDeployment(
     deploymentId: string | undefined,
     error: unknown,

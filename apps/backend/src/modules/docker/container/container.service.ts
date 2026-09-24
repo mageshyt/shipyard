@@ -9,10 +9,10 @@ import {
 import { ContainerDetailDto } from './dto/container-detail.dto';
 import { ListContainerFilterParamsDto } from './dto/listcontainer-filter.dto';
 import { shipyardLabel, toDto } from '@app/shared/util';
-import type { ContainerKillSignal } from '@workspace/types';
+import { type ContainerKillSignal } from '@workspace/types';
 import { CreateContainerDto } from './dto/create-container.dto';
 import { PrismaService } from '@app/shared/services/prisma/prisma.service';
-import { LogLevel } from 'src/generated/prisma/client';
+import { LogLevel, ServiceType } from 'src/generated/prisma/client';
 import { finalize, merge, Observable } from 'rxjs';
 import { PassThrough, Readable } from 'stream';
 
@@ -128,7 +128,7 @@ export class ContainerService {
       const service = dto.serviceId
         ? await this.db.service.findUnique({
           where: { id: dto.serviceId },
-          select: { id: true, slug: true, projectId: true },
+          select: { id: true, slug: true, projectId: true, type: true },
         })
         : null;
 
@@ -148,12 +148,16 @@ export class ContainerService {
         await this.ensureNetwork(network, project?.id);
       }
 
-      const domains = await this.db.domain.findMany({
-        where: { serviceId: service?.id },
-        select: { host: true, containerPort: true },
-        // stable order keeps router indexes (svc-<id>-<i>) fixed across deploys
-        orderBy: { host: 'asc' },
-      });
+      const domains =
+        service &&
+          service.type !== ServiceType.DATABASE &&
+          service.type !== ServiceType.CRON
+          ? await this.db.domain.findMany({
+            where: { serviceId: service.id },
+            select: { host: true, containerPort: true },
+            orderBy: { host: 'asc' },
+          })
+          : [];
 
       const container = await this.dockerService.client.createContainer(
         this.toCreateOptions(dto, name, network, env, domains),
@@ -270,7 +274,6 @@ export class ContainerService {
 
     const exposedPorts: Record<string, object> = {};
     const portBindings: Record<string, Array<{ HostPort: string }>> = {};
-
 
     for (const port of dto.ports ?? []) {
       const key = `${port.container}/${port.protocol ?? 'tcp'}`;
