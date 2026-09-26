@@ -29,6 +29,8 @@ export const ROUTES = {
     DEPLOYMENTS: ':id/deployments',
     DEPLOY: ':id/deploy',
     DOMAINS: ':id/domains',
+    CANCEL_DEPLOYMENT: ':id/deployments/:deploymentId/cancel',
+    RESTART_DEPLOYMENT: ':id/deployments/:deploymentId/restart',
     ENVIRONMENTS: ':id/environment',
     LOGS: ':id/logs',
   },

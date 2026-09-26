@@ -13,33 +13,35 @@ import {
 import { Queue } from 'bullmq';
 import { Prisma } from 'src/generated/prisma/client';
 import { CreateDeploymentDto } from './dto/create-deployment.dto';
+import {
+  ACTIVE_DEPLOYMENT_STATUSES,
+  transitionDeployment,
+} from './deployment-status';
 
 @Injectable()
 export class DeploymentService {
   private readonly logger = new Logger(DeploymentService.name);
   constructor(
     @InjectQueue(DEPLOYMENTS_QUEUE) private readonly deploymentQueue: Queue,
-    private readonly prisma: PrismaService,
-  ) {}
+    private readonly db: PrismaService,
+  ) { }
 
   async createDeploymentJob(
     serviceId: string,
     ownerId: string,
     dto: CreateDeploymentDto,
   ) {
-    const service = await this.prisma.service.findFirst({
+    const service = await this.db.service.findFirst({
       where: { id: serviceId, project: { ownerId } },
     });
     if (!service) {
       throw new NotFoundException('Service not found');
     }
 
-    const existingDeployment = await this.prisma.deployment.findFirst({
+    const existingDeployment = await this.db.deployment.findFirst({
       where: {
         serviceId,
-        status: {
-          in: ['QUEUED', 'PREPARING', 'BUILDING', 'DEPLOYING'],
-        },
+        status: { in: ACTIVE_DEPLOYMENT_STATUSES },
       },
     });
     if (existingDeployment) {
@@ -54,7 +56,7 @@ export class DeploymentService {
     this.logger.log(`Creating deployment for service ${serviceId}`);
 
     try {
-      const deployment = await this.prisma.deployment.create({
+      const deployment = await this.db.deployment.create({
         data: {
           serviceId,
           source: dto.source ?? 'MANUAL',
@@ -70,12 +72,12 @@ export class DeploymentService {
         { jobId: deployment.id },
       );
 
-      const [queued] = await this.prisma.$transaction([
-        this.prisma.deployment.update({
+      const [queued] = await this.db.$transaction([
+        this.db.deployment.update({
           where: { id: deployment.id },
           data: { jobId: deployment.id },
         }),
-        this.prisma.log.create({
+        this.db.log.create({
           data: {
             message: 'Deployment queued',
             level: 'INFO',
@@ -108,5 +110,77 @@ export class DeploymentService {
       }
       throw error;
     }
+  }
+
+  async cancelDeploymentJob(
+    serviceId: string,
+    deploymentId: string,
+    ownerId: string,
+  ) {
+    const deployment = await this.db.deployment.findUnique({
+      where: { id: deploymentId, serviceId, service: { project: { ownerId } } },
+    });
+    if (!deployment) {
+      throw new NotFoundException('Deployment not found');
+    }
+    if (!ACTIVE_DEPLOYMENT_STATUSES.includes(deployment.status)) {
+      throw new ConflictException(
+        `Deployment is ${deployment.status}; only queued or in-progress deployments can be cancelled`,
+      );
+    }
+
+    try {
+      const job = deployment.jobId
+        ? await this.deploymentQueue.getJob(deployment.jobId)
+        : null;
+
+      this.logger.log(
+        `Cancelling deployment ${deploymentId} for service ${serviceId}`,
+      );
+
+      if (job && (await job.getState()) !== 'active') {
+        await job.remove();
+        this.logger.log(`Removed job ${job.id} from queue`);
+      }
+
+      return transitionDeployment(this.db, deployment.id, 'CANCELLED', {
+        finishedAt: new Date(),
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error cancelling deployment ${deploymentId} for service ${serviceId}`,
+        error instanceof Error ? error : undefined,
+      );
+
+      throw error;
+    }
+  }
+
+  async restartDeploymentJob(
+    serviceId: string,
+    deploymentId: string,
+    ownerId: string,
+  ) {
+    const deployment = await this.db.deployment.findUnique({
+      where: { id: deploymentId, serviceId, service: { project: { ownerId } } },
+    });
+    if (!deployment) {
+      throw new NotFoundException('Deployment not found');
+    }
+    if (deployment.status !== 'FAILED') {
+      throw new ConflictException(
+        `Deployment is ${deployment.status}; only failed deployments can be restarted`,
+      );
+    }
+
+    this.logger.log(
+      `Restarting deployment ${deploymentId} for service ${serviceId}`,
+    );
+
+    return this.createDeploymentJob(serviceId, ownerId, {
+      source: deployment.source,
+      branch: deployment.branch ?? undefined,
+      commitHash: deployment.commitHash ?? undefined,
+    });
   }
 }

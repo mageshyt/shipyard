@@ -11,7 +11,7 @@ import { CreateDeploymentDto } from './dto/create-deployment.dto';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class DeploymentController {
-  constructor(private readonly deploymentService: DeploymentService) {}
+  constructor(private readonly deploymentService: DeploymentService) { }
 
   @Post(ROUTES.SERVICE.DEPLOYMENTS)
   create(
@@ -20,5 +20,31 @@ export class DeploymentController {
     @GetUser('id') userId: string,
   ) {
     return this.deploymentService.createDeploymentJob(serviceId, userId, dto);
+  }
+
+  @Post(ROUTES.SERVICE.CANCEL_DEPLOYMENT)
+  cancelDeployment(
+    @Param('id') serviceId: string,
+    @Param('deploymentId') deploymentId: string,
+    @GetUser('id') userId: string,
+  ) {
+    return this.deploymentService.cancelDeploymentJob(
+      serviceId,
+      deploymentId,
+      userId,
+    );
+  }
+
+  @Post(ROUTES.SERVICE.RESTART_DEPLOYMENT)
+  restartDeployment(
+    @Param('id') serviceId: string,
+    @Param('deploymentId') deploymentId: string,
+    @GetUser('id') userId: string,
+  ) {
+    return this.deploymentService.restartDeploymentJob(
+      serviceId,
+      deploymentId,
+      userId,
+    );
   }
 }

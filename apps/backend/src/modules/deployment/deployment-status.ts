@@ -20,6 +20,13 @@ export const DEPLOYMENT_TRANSITIONS: Record<
   CANCELLED: [],
 };
 
+export const ACTIVE_DEPLOYMENT_STATUSES: DeploymentStatus[] = [
+  'QUEUED',
+  'PREPARING',
+  'BUILDING',
+  'DEPLOYING',
+];
+
 const LOG_MESSAGE: Partial<Record<DeploymentStatus, string>> = {
   PREPARING: 'Deployment started',
   BUILDING: 'Image build started',
