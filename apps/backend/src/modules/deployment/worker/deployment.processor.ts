@@ -3,7 +3,7 @@ import {
   getDeploymentWorkerConfig,
 } from '@app/core/queue/queue.constants';
 import { PrismaService } from '@app/shared/services/prisma/prisma.service';
-import { SHIPYARD_NETWORK } from '@app/shared/util';
+import { SHIPYARD_NETWORK, tokenizeCommand } from '@app/shared/util';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import type { DeploymentJobData, ServicePortMapping } from '@workspace/types';
@@ -191,7 +191,7 @@ export class DeploymentProcessor extends WorkerHost {
         ports: portMappings,
         volumes,
         ...(service.startCommand
-          ? { cmd: service.startCommand.split(/\s+/) }
+          ? { cmd: tokenizeCommand(service.startCommand) }
           : {}),
       });
       this.logger.log(
@@ -211,6 +211,9 @@ export class DeploymentProcessor extends WorkerHost {
         finishedAt: new Date(),
       });
       this.logger.log(`Deployment ${deploymentId} running`);
+
+      // clean up the workspace after successful deployment
+      await rm(workspace, { recursive: true, force: true });
     } catch (error) {
       await this.failDeployment(deploymentId, error);
       throw error;
