@@ -65,17 +65,31 @@ services:
     image: traefik:v3
     command:
       - --api.dashboard=true
-      - --api.insecure=true # local only; remove before production
+      - --api.insecure=true #NOTE: local only; remove before production
       - --providers.docker=true
       - --providers.docker.exposedByDefault=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
+      - --providers.file.directory=/etc/traefik/dynamic
     ports:
       - 80:80
       - 443:443
       - 8080:8080
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/certs:ro
+      - ./traefik-dynamic.yaml:/etc/traefik/dynamic/tls.yaml:ro
+    networks:
+      - shipyard-network
+    restart: unless-stopped
+
+  whoami:
+    image: traefik/whoami
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.localhost`)"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
     networks:
       - shipyard-network
     restart: unless-stopped
